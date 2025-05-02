@@ -1,2 +1,2 @@
 # RL-study
-reinforcement learning study repo
+> <밑바닥부터 시작하는 딥러닝 4 - 강화학습 편> 을 읽고 예제 코드 및 공부용 레포지토리
