@@ -1,8 +1,6 @@
 import sys
 import os
 
-from pytesseract.pytesseract import is_valid
-
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import math
 import matplotlib.pyplot as plt
