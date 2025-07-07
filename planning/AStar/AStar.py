@@ -32,7 +32,7 @@ class AStar:
 
         open_set[self.calc_grid_index(start_node)] = start_node
         while len(open_set):
-            curr_id = min(open_set, key=lambda o: open_set[o].g + open_set[o].h)
+            curr_id = min(open_set, key=lambda o: 0 * open_set[o].g + open_set[o].h)
             curr = open_set[curr_id]
 
             # show graph
@@ -133,6 +133,11 @@ if __name__ == "__main__":
         obs.append((20.0, i))
     for i in range(0, 40):
         obs.append((40.0, 60.0 - i))
+
+    for i in range(0, 21):
+        obs.append((i, 20))
+    for i in range(0, 21):
+        obs.append((0, i))
     grid_map = GridMap2D(2.0, 1.0, obs)
     plt.grid(True)
     plt.axis("equal")
