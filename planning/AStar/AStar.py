@@ -1,11 +1,7 @@
-import sys
-import os
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import math
 import matplotlib.pyplot as plt
-from common.GridMap2D import GridMap2D
-from common.Node import Node
+from GridMap2D import GridMap2D
+from Node import Node
 
 class AStar:
     def __init__(self, grid_map):
