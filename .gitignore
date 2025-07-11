@@ -1,4 +1,6 @@
 __pycache__
 .idea/
 *.png
-**/example.py
+**/example*.py
+.DS_Store
+PythonRobotics
