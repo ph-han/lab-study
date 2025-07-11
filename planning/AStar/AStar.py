@@ -32,7 +32,7 @@ class AStar:
 
         open_set[self.calc_grid_index(start_node)] = start_node
         while len(open_set):
-            curr_id = min(open_set, key=lambda o: 0 * open_set[o].g + open_set[o].h)
+            curr_id = min(open_set, key=lambda o: open_set[o].g + open_set[o].h)
             curr = open_set[curr_id]
 
             # show graph
