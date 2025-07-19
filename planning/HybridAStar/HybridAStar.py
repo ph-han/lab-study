@@ -103,7 +103,7 @@ class HybridAStar:
         move_cost = 1
         reverse_move_cost = 10
         change_direction_cost = 50
-        steering_cost = 1.5
+        steering_cost = 1
         diff_yaw_cost = 2
         
         # calculated heurstic tables
@@ -124,7 +124,7 @@ class HybridAStar:
                 goal_node.p_idx = curr_id
                 break
 
-            print(f"current state = x : {curr.rx}, y : {curr.ry}, yaw : {curr.ryaw}")
+            # print(f"current state = x : {curr.rx}, y : {curr.ry}, yaw : {curr.ryaw}")
             self.vehicle.x = curr.x * self.xy_resolution
             self.vehicle.y = curr.y * self.xy_resolution
             self.vehicle.yaw = curr.yaw * self.yaw_resolution
@@ -149,7 +149,7 @@ class HybridAStar:
                 next_g_cost = move_cost
                 next_g_cost *= (direction == -1) * reverse_move_cost + (direction == 1) * 1
                 next_g_cost += (direction != curr.r) * change_direction_cost
-                next_g_cost += abs(steer) * steering_cost
+                next_g_cost += abs(np.rad2deg(steer)) * steering_cost
                 next_g_cost += abs(curr.yaw - nyaw) * diff_yaw_cost
                 next_g_cost += curr.g
 
@@ -167,6 +167,7 @@ class HybridAStar:
                     self.non_holonomic_table[nh_idx] = 100000
 
                 next_node.h = max(self.holonomic_table[h_idx], self.non_holonomic_table[nh_idx])
+                print(self.holonomic_table[h_idx], self.non_holonomic_table[nh_idx])
 
                 next_node.f = next_g_cost + next_node.h
 
@@ -252,7 +253,7 @@ class HybridAStar:
                 # calculating moving cost (including change direction, sterring angle etc..)
                 next_cost = move_cost
                 next_cost *= (direction == 1) * reverse_move_cost + (direction == -1) * 1
-                next_cost += (direction != curr.r) * change_direction_cost
+                next_cost += (direction == curr.r) * change_direction_cost
                 next_cost += abs(steer) * steering_cost
                 next_cost += abs(goal_node.yaw - nyaw) * diff_yaw_cost
                 next_cost += curr_cost
@@ -271,7 +272,7 @@ class HybridAStar:
 
     def bicycle_action_command(self):
         forward, backward = (1, -1)
-        angle_step = np.deg2rad(10) # deg 10
+        angle_step = np.deg2rad(20) # deg 10
 
         for angle in np.arange(-self.vehicle.MAX_STEER, self.vehicle.MAX_STEER + angle_step, angle_step):
             yield angle, forward
@@ -293,7 +294,7 @@ class HybridAStar:
             [-1, -1, math.sqrt(2)]
         ]
 
-        cost_weight = 2.0
+        cost_weight = 50.0
 
         open_set = dict()
         closed_set = dict()
@@ -335,13 +336,19 @@ class HybridAStar:
     def analystic_expansion(self):
         pass
 
+    def smoothing(self, rx, ry, ryaw, obstacles):
+        pass
+
+
 if __name__ == "__main__":
     start = [10.0, 10.0, np.deg2rad(90.0)]
-    goal = [55.0, 30.0, np.deg2rad(90.0)]
+    goal = [50.0, 50.0, np.deg2rad(270.0)]
     arrow_length = 2 * 0.5
     dx = arrow_length * math.cos(goal[2])
     dy = arrow_length * math.sin(goal[2])
-
+    plt.arrow(start[0], start[1], arrow_length * math.cos(start[2]), arrow_length * math.sin(start[2]),
+                head_width=0.3, head_length=0.4,
+                fc="black", ec="black")
     plt.arrow(goal[0], goal[1], dx, dy,
               head_width=0.3, head_length=0.4,
               fc="blue", ec="blue")
@@ -349,53 +356,53 @@ if __name__ == "__main__":
 
     ox, oy = [], []
 
-    # for i in range(60):
-    #     ox.append(i)
-    #     oy.append(0.0)
-    # for i in range(60):
-    #     ox.append(60.0)
-    #     oy.append(i)
-    # for i in range(61):
-    #     ox.append(i)
-    #     oy.append(60.0)
-    # for i in range(61):
-    #     ox.append(0.0)
-    #     oy.append(i)
-    # for i in range(40):
-    #     ox.append(20.0)
-    #     oy.append(i)
-    # for i in range(40):
-    #     ox.append(40.0)
-    #     oy.append(60.0 - i)
-
     for i in range(60):
         ox.append(i)
         oy.append(0.0)
-    for i in range(40):
+    for i in range(60):
         ox.append(60.0)
         oy.append(i)
     for i in range(61):
         ox.append(i)
-        oy.append(40.0)
-    for i in range(41):
+        oy.append(60.0)
+    for i in range(61):
         ox.append(0.0)
         oy.append(i)
-    
-    for i in range(25):
-        ox.append(50.0)
+    for i in range(40):
+        ox.append(20.0)
         oy.append(i)
+    for i in range(40):
+        ox.append(40.0)
+        oy.append(60.0 - i)
+
+    # for i in range(60):
+    #     ox.append(i)
+    #     oy.append(0.0)
+    # for i in range(40):
+    #     ox.append(60.0)
+    #     oy.append(i)
+    # for i in range(61):
+    #     ox.append(i)
+    #     oy.append(40.0)
+    # for i in range(41):
+    #     ox.append(0.0)
+    #     oy.append(i)
     
-    for i in range(10):
-        ox.append(50.0 + i)
-        oy.append(25)
+    # for i in range(25):
+    #     ox.append(50.0)
+    #     oy.append(i)
     
-    for i in range(10):
-        ox.append(50.0 + i)
-        oy.append(35)
+    # for i in range(10):
+    #     ox.append(50.0 + i)
+    #     oy.append(25)
     
-    for i in range(40 - 35):
-        ox.append(50.0)
-        oy.append(35 + i)
+    # for i in range(10):
+    #     ox.append(50.0 + i)
+    #     oy.append(35)
+    
+    # for i in range(40 - 35):
+    #     ox.append(50.0)
+    #     oy.append(35 + i)
 
 
     grid_map = Map(ox, oy)
