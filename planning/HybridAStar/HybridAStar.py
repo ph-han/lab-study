@@ -194,7 +194,7 @@ class HybridAStar:
         xy_diff = math.hypot(cx - goal_node.x, cy - goal_node.y)
         yaw_diff = abs(cyaw - goal_node.yaw)
 
-        return xy_diff < 1 and yaw_diff < np.deg2rad(5) / self.yaw_resolution
+        return xy_diff < self.xy_resolution and yaw_diff < np.deg2rad(5) / self.yaw_resolution
 
     def non_holonomic_without_obstacles(self, start_node, goal_node): # calculating from goal_node to all node
         # result of non-holonomic heuristic table
@@ -343,7 +343,7 @@ class HybridAStar:
 
 if __name__ == "__main__":
     start = [10.0, 10.0, np.deg2rad(90.0)]
-    goal = [50.0, 50.0, np.deg2rad(00.0)]
+    goal = [50.0, 50.0, np.deg2rad(0.0)]
     arrow_length = 2 * 0.5
     dx = arrow_length * math.cos(goal[2])
     dy = arrow_length * math.sin(goal[2])
@@ -388,19 +388,19 @@ if __name__ == "__main__":
     # for i in range(41):
     #     ox.append(0.0)
     #     oy.append(i)
-    
+    #
     # for i in range(25):
     #     ox.append(50.0)
     #     oy.append(i)
-    
+    #
     # for i in range(10):
     #     ox.append(50.0 + i)
     #     oy.append(25)
-    
+    #
     # for i in range(10):
     #     ox.append(50.0 + i)
     #     oy.append(35)
-    
+    #
     # for i in range(40 - 35):
     #     ox.append(50.0)
     #     oy.append(35 + i)
