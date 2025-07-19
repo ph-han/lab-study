@@ -2,6 +2,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 import heapq as hq
+from smoother import smooth_path
 
 from Car import Car
 class Node:
@@ -336,13 +337,13 @@ class HybridAStar:
     def analystic_expansion(self):
         pass
 
-    def smoothing(self, rx, ry, ryaw, obstacles):
-        pass
+    # def smoothing(self, rx, ry, ryaw, obstacle_map):
+    #     pass
 
 
 if __name__ == "__main__":
     start = [10.0, 10.0, np.deg2rad(90.0)]
-    goal = [50.0, 50.0, np.deg2rad(270.0)]
+    goal = [50.0, 50.0, np.deg2rad(90.0)]
     arrow_length = 2 * 0.5
     dx = arrow_length * math.cos(goal[2])
     dy = arrow_length * math.sin(goal[2])
@@ -410,6 +411,7 @@ if __name__ == "__main__":
 
     hybrid_a_star = HybridAStar(grid_map, ioniq5, start, goal, 2, np.deg2rad(15))
     r_x, r_y, r_yaw = hybrid_a_star.planning()
+    r_x, r_y = smooth_path(np.array(list(zip(r_x, r_y))), np.array(list(zip(ox, oy))))
     plt.plot(r_x, r_y, "-r")
     if len(r_x) == 1:
         print("ERROR!")
