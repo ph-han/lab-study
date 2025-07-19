@@ -30,7 +30,7 @@ class Car:
     TR = 0.24
     TW = 0.48
 
-    MAX_STEER = 0.7  # rad
+    MAX_STEER = np.deg2rad(40)  # rad
     SPEED = 1.0
 
     def __init__(self, x, y, yaw):
