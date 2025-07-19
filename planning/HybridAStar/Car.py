@@ -1,12 +1,3 @@
-'''
-TODO
-- [] 자동차 모델 정의
-  - [] 차의 크기(가로, 세로), 조향각의 최대각 설정, 바퀴 위치
-  - [] 차 움직임 함수
-  - [] 차량 충돌 검사 함수
-  - [] 차량 그려주는 함수
-'''
-
 from math import cos, sin, tan, pi
 import numpy as np
 import matplotlib.pyplot as plt
