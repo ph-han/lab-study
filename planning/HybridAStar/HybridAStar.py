@@ -163,9 +163,9 @@ class HybridAStar:
                     continue
 
                 if h_idx not in self.holonomic_table:
-                    self.holonomic_table[h_idx] = 100000
+                    self.holonomic_table[h_idx] = 0.0
                 if nh_idx not in self.non_holonomic_table:
-                    self.non_holonomic_table[nh_idx] = 100000
+                    self.non_holonomic_table[nh_idx] = 0.0
 
                 next_node.h = max(self.holonomic_table[h_idx], self.non_holonomic_table[nh_idx])
                 print(self.holonomic_table[h_idx], self.non_holonomic_table[nh_idx])
@@ -273,9 +273,10 @@ class HybridAStar:
 
     def bicycle_action_command(self):
         forward, backward = (1, -1)
-        angle_step = np.deg2rad(20) # deg 10
+        angle_step = np.deg2rad(10) # deg 10
 
         for angle in np.arange(-self.vehicle.MAX_STEER, self.vehicle.MAX_STEER + angle_step, angle_step):
+        # for angle in [-self.vehicle.MAX_STEER, 0.0, self.vehicle.MAX_STEER]:
             yield angle, forward
             yield angle, backward
 
@@ -344,7 +345,7 @@ class HybridAStar:
 if __name__ == "__main__":
     start = [10.0, 10.0, np.deg2rad(90.0)]
     goal = [50.0, 50.0, np.deg2rad(0.0)]
-    arrow_length = 2 * 0.5
+    arrow_length = 2
     dx = arrow_length * math.cos(goal[2])
     dy = arrow_length * math.sin(goal[2])
     plt.arrow(start[0], start[1], arrow_length * math.cos(start[2]), arrow_length * math.sin(start[2]),
