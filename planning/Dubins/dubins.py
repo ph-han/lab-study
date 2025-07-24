@@ -32,11 +32,11 @@ def _LRL(di, r_turn):
         return None
     # plt.plot([_c1['x'], _c3['x']], [_c1['y'], _c3['y']], color='blue', linewidth=1)
     p3 = [_c3['x'], _c3['y']]
-    plt.plot(p3[0], p3[1], 'xg')
-    circle = plt.Circle((p3[0], p3[1]), r_turn, edgecolor='cyan', facecolor='none')
+    # plt.plot(p3[0], p3[1], 'xg')
+    # circle = plt.Circle((p3[0], p3[1]), r_turn, edgecolor='cyan', facecolor='none')
 
-    ax = plt.gca()
-    ax.add_patch(circle)
+    # ax = plt.gca()
+    # ax.add_patch(circle)
 
     v2 = np.array(p1) - np.array(p3)
     v2 = (v2 / np.hypot(v2[0], v2[1])) * r_turn
@@ -91,11 +91,11 @@ def _RLR(di, r_turn):
     # print("asdf")
     plt.plot([_c1['x'], _c3['x']], [_c1['y'], _c3['y']], color='blue', linewidth=1)
     p3 = [_c3['x'], _c3['y']]
-    plt.plot(p3[0], p3[1], 'xg')
-    circle = plt.Circle((p3[0], p3[1]), r_turn, edgecolor='cyan', facecolor='none')
-
-    ax = plt.gca()
-    ax.add_patch(circle)
+    # plt.plot(p3[0], p3[1], 'xg')
+    # circle = plt.Circle((p3[0], p3[1]), r_turn, edgecolor='cyan', facecolor='none')
+    #
+    # ax = plt.gca()
+    # ax.add_patch(circle)
 
     v2 = np.array(p1) - np.array(p3)
     v2 = (v2 / np.hypot(v2[0], v2[1])) * r_turn
@@ -284,16 +284,22 @@ def _dubins_in(curr_state, goal_state, r_turn):
 
     return cr, cl, gr, gl
 
-def _calc_cost(path):
-    return 0
+def _calc_cost(path, r_turn):
+    cost = 0
+    for p in path:
+        if p[0] == 's':
+            cost += p[1]
+        else:
+            cost += abs(np.rad2deg(p[1])) * r_turn
+    return cost
 
-def _get_opt_path(paths):
-    opt_cost = _calc_cost(paths[0][:])
+def _get_opt_path(paths, r_turn):
+    opt_cost = _calc_cost(paths[0][:], r_turn)
     opt_idx = 0
     num_of_possible_path = len(paths)
 
     for idx in range(1, num_of_possible_path):
-        curr_cost = _calc_cost(paths[idx][:])
+        curr_cost = _calc_cost(paths[idx][:], r_turn)
         if curr_cost >= opt_cost:
             continue
         opt_cost = curr_cost
@@ -313,7 +319,6 @@ def rotate_point(x, y, c, angle_rad):
     return x_new, y_new
 
 def gen_path(start_pos, dubins_params):
-    ds = 0.5
     path_x = [start_pos[0]]
     path_y = [start_pos[1]]
     path_yaw = [start_pos[2]]
@@ -322,6 +327,7 @@ def gen_path(start_pos, dubins_params):
     for p in dubins_params:
         if p[0] == 's':
             print(p[1])
+            ds = p[1] / 300
             base_x, base_y = path_x[-1], path_y[-1]
             for d in np.arange(1, p[1], ds):
                 path_x.append(base_x + d * np.cos(yaw))
@@ -349,38 +355,27 @@ def gen_path(start_pos, dubins_params):
 
 def dubins_path(curr_state, goal_state, r_turn):
     di = _dubins_in(curr_state, goal_state, r_turn)
-    circle = plt.Circle((di[0]['x'], di[0]['y']), r_turn, edgecolor='blue', facecolor='none')
-    circle2 = plt.Circle((di[2]['x'], di[2]['y']), r_turn, edgecolor='green', facecolor='none')
 
-    ax = plt.gca()
-    ax.add_patch(circle)
-    ax.add_patch(circle2)
-    ax.set_aspect('equal')
     dubins_words = [_LSL, _LSR, _RSL, _RSR, _RLR, _LRL]
-    # dubins_words = [_RLR]
     color_set = ['r', 'b', 'g', 'y', 'c', 'm']
-    # dubins_words = [_LSL]
     paths = []
     for idx, word in enumerate(dubins_words):
         path = word(di, r_turn)
         if path is None:
             print("is none!")
             continue
-        print(np.rad2deg(path[0][1]), path[1][1], np.rad2deg(path[2][1]))
+        paths.append(path)
         px, py, pyaw = gen_path(curr_state, path)
         plt.plot(px, py, f"-{color_set[idx]}")
-        plt.pause(2)
+        plt.pause(1)
         plt.axis('equal')
-        # if path is None:
-        #     continue
-        # paths.append(path)
 
-    # opt_path, opt_path_cost = _get_opt_path(paths)
-    # return opt_path, opt_path_cost
+    opt_path, opt_path_cost = _get_opt_path(paths, r_turn)
+    return opt_path, opt_path_cost
 
 if __name__ == "__main__":
     curr_state = [0, 0, np.deg2rad(100)]
-    goal_state = [10, -2, np.deg2rad(140)]
+    goal_state = [4, -2, np.deg2rad(140)]
     car = Car(*curr_state)
     car.display_arrow('black')
     plt.xlim(-20, 20)
@@ -394,9 +389,19 @@ if __name__ == "__main__":
               head_width=0.3, head_length=0.4,
               fc="blue", ec="blue")
     r_turn =Car.WHEEL_BASE / math.tan(Car.MAX_STEER)
-    dubins_path(curr_state, goal_state, r_turn)
+    opt_path, opt_cost = dubins_path(curr_state, goal_state, r_turn)
+    print("cost = ", opt_cost)
 
-
-
+    px, py, pyaw = gen_path(curr_state, opt_path)
+    count = 0
+    for x, y, yaw in zip(px, py, pyaw):
+        if count % 10 == 0:
+            car.x, car.y, car.yaw = x, y, yaw
+            plt.cla()
+            plt.plot(px, py, "-k")
+            car.draw()
+            plt.pause(0.001)
+            plt.axis('equal')
+        count+=1
     plt.axis('equal')
     plt.show()
