@@ -8,11 +8,123 @@ def _calc_angle(start_pos, end_pos):
     dot = np.dot(start_pos, end_pos)
     return np.arctan2(det, dot)
 
-def _LRL(di):
-    return []
+def _LRL(di, r_turn):
+    _, _c1, _, _c2 = di
+    dx = _c2['x'] - _c1['x']
+    dy = _c2['y'] - _c1['y']
+    distance = np.hypot(dx, dy)
+    # plt.plot([_c1['x'], _c2['x']], [_c1['y'], _c2['y']], color='blue', linewidth=1)
 
-def _RLR(di):
-    return []
+    p1 = px1, py1 = (_c1['x'], _c1['y'])
+    p2 = px2, py2 = (_c2['x'], _c2['y'])
+
+    if (distance / (4*r_turn) > 1.0):
+        return None
+
+    theta = _calc_angle([1, 0], [dx, dy]) - math.acos(distance / (4*r_turn))
+
+    _c3 = {
+        'x': px1 + (2*r_turn)*math.cos(theta),
+        'y': py1 + (2*r_turn)*math.sin(theta)
+    }
+    distance_of_c3_to_c2 = np.hypot(_c3['x'] - _c2['x'], _c3['y'] - _c2['y'])
+    if (2*r_turn + 1e-4 < distance_of_c3_to_c2 or distance_of_c3_to_c2 < 2*r_turn - + 1e-4):
+        return None
+    # plt.plot([_c1['x'], _c3['x']], [_c1['y'], _c3['y']], color='blue', linewidth=1)
+    p3 = [_c3['x'], _c3['y']]
+    plt.plot(p3[0], p3[1], 'xg')
+    circle = plt.Circle((p3[0], p3[1]), r_turn, edgecolor='cyan', facecolor='none')
+
+    ax = plt.gca()
+    ax.add_patch(circle)
+
+    v2 = np.array(p1) - np.array(p3)
+    v2 = (v2 / np.hypot(v2[0], v2[1])) * r_turn
+    v3 = np.array(p2) - np.array(p3)
+    v3 = (v3 / np.hypot(v3[0], v3[1])) * r_turn
+
+    pt1 = p3 + v2
+    pt2 = p3 + v3
+
+    plt.plot(pt1[0], pt1[1], 'xb')
+    plt.plot(pt2[0], pt2[1], 'xr')
+
+    alpha_start_pos = [_c1['state'][0] - _c1['x'], _c1['state'][1] - _c1['y']]
+    alpha_end_pos = [pt1[0] - _c1['x'], pt1[1] - _c1['y']]
+
+    beta_start_pos = [pt1[0] - _c3['x'], pt1[1] - _c3['y']]
+    beta_end_pos = [pt2[0] - _c3['x'], pt2[1] - _c3['y']]
+
+    gamma_start_pos = [pt2[0] - _c2['x'], pt2[1] - _c2['y']]
+    gamma_end_pos = [((_c2['state'][0] - _c2['x'])),
+                     ((_c2['state'][1] - _c2['y']))]
+    # angle
+    alpha = _calc_angle(alpha_start_pos, alpha_end_pos)
+    a = 2 * np.pi + alpha if alpha < 0 else alpha
+    beta = _calc_angle(beta_start_pos, beta_end_pos)
+    b = -2 * np.pi + beta if beta > 0 else beta
+    gamma = _calc_angle(gamma_start_pos, gamma_end_pos)
+    g = 2 * np.pi + gamma if gamma < 0 else gamma
+    return [['l', a, _c1], ['r', b, _c3], ['l', g, _c2]]
+
+def _RLR(di, r_turn):
+    _c1, _, _c2, _ = di
+    dx = _c2['x'] - _c1['x']
+    dy = _c2['y'] - _c1['y']
+    distance = np.hypot(dx, dy)
+    # plt.plot([_c1['x'], _c2['x']], [_c1['y'], _c2['y']], color='blue', linewidth=1)
+
+    p1 = px1, py1 = (_c1['x'], _c1['y'])
+    p2 = px2, py2 = (_c2['x'], _c2['y'])
+    if distance / (4 * r_turn) > 1.0:
+        return None
+    # print("asf: ", distance / (4 * r_turn) )
+    theta = _calc_angle([1, 0], [dx, dy]) - math.acos(distance / (4 * r_turn))
+    # print("theta ok")
+    _c3 = {
+        'x': px1 + (2 * r_turn) * math.cos(-theta),
+        'y': py1 + (2 * r_turn) * math.sin(-theta)
+    }
+    distance_of_c3_to_c2 = np.hypot(_c3['x'] - _c2['x'], _c3['y'] - _c2['y'])
+    if (2 * r_turn + 1e-4 < distance_of_c3_to_c2 or distance_of_c3_to_c2 < 2 * r_turn - + 1e-4):
+        return None
+    # print("asdf")
+    plt.plot([_c1['x'], _c3['x']], [_c1['y'], _c3['y']], color='blue', linewidth=1)
+    p3 = [_c3['x'], _c3['y']]
+    plt.plot(p3[0], p3[1], 'xg')
+    circle = plt.Circle((p3[0], p3[1]), r_turn, edgecolor='cyan', facecolor='none')
+
+    ax = plt.gca()
+    ax.add_patch(circle)
+
+    v2 = np.array(p1) - np.array(p3)
+    v2 = (v2 / np.hypot(v2[0], v2[1])) * r_turn
+    v3 = np.array(p2) - np.array(p3)
+    v3 = (v3 / np.hypot(v3[0], v3[1])) * r_turn
+
+    pt1 = p3 + v2
+    pt2 = p3 + v3
+
+    plt.plot(pt1[0], pt1[1], 'xb')
+    plt.plot(pt2[0], pt2[1], 'xr')
+
+    alpha_start_pos = [_c1['state'][0] - _c1['x'], _c1['state'][1] - _c1['y']]
+    alpha_end_pos = [pt1[0] - _c1['x'], pt1[1] - _c1['y']]
+
+    beta_start_pos = [pt1[0] - _c3['x'], pt1[1] - _c3['y']]
+    beta_end_pos = [pt2[0] - _c3['x'], pt2[1] - _c3['y']]
+
+    gamma_start_pos = [pt2[0] - _c2['x'], pt2[1] - _c2['y']]
+    gamma_end_pos = [((_c2['state'][0] - _c2['x'])),
+                     ((_c2['state'][1] - _c2['y']))]
+    # angle
+    alpha = _calc_angle(alpha_start_pos, alpha_end_pos)
+    a = -2 * np.pi + alpha if alpha > 0 else alpha
+    beta = _calc_angle(beta_start_pos, beta_end_pos)
+    b = 2 * np.pi + beta if beta < 0 else beta
+    gamma = _calc_angle(gamma_start_pos, gamma_end_pos)
+    g = -2 * np.pi + gamma if gamma > 0 else gamma
+    return [['r', a, _c1], ['l', b, _c3], ['r', g, _c2]]
 
 def _LSL(di, r_turn):
     _, _c1, _, _c2 = di
@@ -54,6 +166,8 @@ def _LSR(di, r_turn):
     distance = np.hypot(dx, dy)
     # plt.plot([_c1['x'], _c2['x']], [_c1['y'], _c2['y']], color='blue', linewidth=1)
     c = -(2 * r_turn) / distance
+    if 1 - c ** 2 < 0:
+        return None
     hat_v = {'x': dx / distance, 'y': dy / distance}
     hat_n = {'x': hat_v['x'] * c - hat_v['y'] * math.sqrt(1 - c**2),
              'y': hat_v['x'] * math.sqrt(1 - c**2) + hat_v['y'] * c}
@@ -88,6 +202,8 @@ def _RSL(di, r_turn):
     distance = np.hypot(dx, dy)
     # plt.plot([_c1['x'], _c2['x']], [_c1['y'], _c2['y']], color='blue', linewidth=1)
     c = (2 * r_turn) / distance
+    if 1 - c ** 2 < 0:
+        return None
     hat_v = {'x': dx / distance, 'y': dy / distance}
     hat_n = {'x': hat_v['x'] * c - hat_v['y'] * math.sqrt(1 - c ** 2),
              'y': hat_v['x'] * math.sqrt(1 - c ** 2) + hat_v['y'] * c}
@@ -95,8 +211,8 @@ def _RSL(di, r_turn):
     pot1 = {'x': _c1['x'] + hat_n['x'] * r_turn, 'y': _c1['y'] + hat_n['y'] * r_turn}
     pot2 = {'x': _c2['x'] - hat_n['x'] * r_turn, 'y': _c2['y'] - hat_n['y'] * r_turn}
 
-    print(pot1)
-    print(pot2)
+    # print(pot1)
+    # print(pot2)
 
     # plt.plot(pot1['x'], pot1['y'], '.b')
     # plt.plot(pot2['x'], pot2['y'], '.r')
@@ -190,7 +306,6 @@ def rotate_point(x, y, c, angle_rad):
     dx = x - cx
     dy = y - cy
 
-    # 회전 적용
     cos_theta = np.cos(angle_rad)
     sin_theta = np.sin(angle_rad)
     x_new = cos_theta * dx - sin_theta * dy + cx
@@ -233,14 +348,24 @@ def gen_path(start_pos, dubins_params):
     return path_x, path_y, path_yaw
 
 def dubins_path(curr_state, goal_state, r_turn):
-    r_turn = 2
     di = _dubins_in(curr_state, goal_state, r_turn)
-    dubins_words = [_LSL, _LSR, _RSL, _RSR]
-    color_set = ['r', 'b', 'g', 'y']
+    circle = plt.Circle((di[0]['x'], di[0]['y']), r_turn, edgecolor='blue', facecolor='none')
+    circle2 = plt.Circle((di[2]['x'], di[2]['y']), r_turn, edgecolor='green', facecolor='none')
+
+    ax = plt.gca()
+    ax.add_patch(circle)
+    ax.add_patch(circle2)
+    ax.set_aspect('equal')
+    dubins_words = [_LSL, _LSR, _RSL, _RSR, _RLR, _LRL]
+    # dubins_words = [_RLR]
+    color_set = ['r', 'b', 'g', 'y', 'c', 'm']
     # dubins_words = [_LSL]
     paths = []
     for idx, word in enumerate(dubins_words):
         path = word(di, r_turn)
+        if path is None:
+            print("is none!")
+            continue
         print(np.rad2deg(path[0][1]), path[1][1], np.rad2deg(path[2][1]))
         px, py, pyaw = gen_path(curr_state, path)
         plt.plot(px, py, f"-{color_set[idx]}")
@@ -255,7 +380,7 @@ def dubins_path(curr_state, goal_state, r_turn):
 
 if __name__ == "__main__":
     curr_state = [0, 0, np.deg2rad(100)]
-    goal_state = [20, -2, np.deg2rad(140)]
+    goal_state = [10, -2, np.deg2rad(140)]
     car = Car(*curr_state)
     car.display_arrow('black')
     plt.xlim(-20, 20)
@@ -270,6 +395,7 @@ if __name__ == "__main__":
               fc="blue", ec="blue")
     r_turn =Car.WHEEL_BASE / math.tan(Car.MAX_STEER)
     dubins_path(curr_state, goal_state, r_turn)
+
 
 
     plt.axis('equal')
