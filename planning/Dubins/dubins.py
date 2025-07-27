@@ -1,7 +1,9 @@
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-from Car import Car
+import sys
+sys.path.append("../")
+from HybridAStar.Car import Car
 
 def _calc_angle(start_pos, end_pos):
     det = start_pos[0] * end_pos[1] - start_pos[1] * end_pos[0]
@@ -89,7 +91,7 @@ def _RLR(di, r_turn):
     if (2 * r_turn + 1e-4 < distance_of_c3_to_c2 or distance_of_c3_to_c2 < 2 * r_turn - + 1e-4):
         return None
     # print("asdf")
-    plt.plot([_c1['x'], _c3['x']], [_c1['y'], _c3['y']], color='blue', linewidth=1)
+    # plt.plot([_c1['x'], _c3['x']], [_c1['y'], _c3['y']], color='blue', linewidth=1)
     p3 = [_c3['x'], _c3['y']]
     # plt.plot(p3[0], p3[1], 'xg')
     # circle = plt.Circle((p3[0], p3[1]), r_turn, edgecolor='cyan', facecolor='none')
@@ -327,8 +329,9 @@ def gen_path(start_pos, dubins_params):
     for p in dubins_params:
         if p[0] == 's':
             print(p[1])
-            ds = p[1] / 300
+            ds = 1
             base_x, base_y = path_x[-1], path_y[-1]
+            yaw = path_yaw[-1]
             for d in np.arange(1, p[1], ds):
                 path_x.append(base_x + d * np.cos(yaw))
                 path_y.append(base_y + d * np.sin(yaw))
@@ -337,16 +340,21 @@ def gen_path(start_pos, dubins_params):
             path_y.append(base_y + p[1] * np.sin(yaw))
             path_yaw.append(yaw)
         else:
-            step = np.deg2rad(1)
+            step = 1
             goal_angle = round(np.rad2deg(np.pi * 2 + p[1] if p[0] == 'l' and p[1] < 0 else p[1]))
             base_x, base_y = path_x[-1], path_y[-1]
             print(f"goal_angle = {goal_angle} {p[0]}")
-            for y in np.arange(0, goal_angle + step, step if p[0] == 'l' else -step):
+            for y in np.arange(0, goal_angle, step if p[0] == 'l' else -step):
                 nx, ny = rotate_point(base_x, base_y, p[2], np.deg2rad(y))
                 path_x.append(nx)
                 path_y.append(ny)
-                yaw = np.arctan2(path_y[-1] - path_y[-2], path_x[-1] - path_x[-2])
-                path_yaw.append(yaw)
+                nyaw = (yaw + np.deg2rad(y))
+                path_yaw.append(nyaw)
+            nx, ny = rotate_point(base_x, base_y, p[2], np.deg2rad(goal_angle))
+            path_x.append(nx)
+            path_y.append(ny)
+            nyaw = yaw + np.deg2rad(goal_angle)
+            path_yaw.append(nyaw)
         # plt.plot(path_x, path_y, '-r')
         # plt.axis('equal')
         # plt.pause(1)
@@ -374,8 +382,8 @@ def dubins_path(curr_state, goal_state, r_turn):
     return opt_path, opt_path_cost
 
 if __name__ == "__main__":
-    curr_state = [0, 0, np.deg2rad(100)]
-    goal_state = [4, -2, np.deg2rad(140)]
+    curr_state = [0, 0, np.deg2rad(90)]
+    goal_state = [0, 2, np.deg2rad(45)]
     car = Car(*curr_state)
     car.display_arrow('black')
     plt.xlim(-20, 20)
