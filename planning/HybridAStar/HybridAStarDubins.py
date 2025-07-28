@@ -1,13 +1,10 @@
 import math
-from time import sleep
 
-import numpy as np
 import matplotlib.pyplot as plt
-import heapq as hq
-from dubins import dubins_path, gen_path, calc_cost, get_opt_path
-from smoother import smooth_path
+import numpy as np
 
 from Car import Car
+from dubins import dubins_path, gen_path, calc_cost, get_opt_path
 
 
 class Node:
