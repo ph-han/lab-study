@@ -382,8 +382,8 @@ def dubins_path(curr_state, goal_state, r_turn):
     return opt_path, opt_path_cost
 
 if __name__ == "__main__":
-    curr_state = [0, 0, np.deg2rad(90)]
-    goal_state = [0, 2, np.deg2rad(45)]
+    curr_state = [0, 0, np.deg2rad(0)]
+    goal_state = [0, 6, np.deg2rad(60)]
     car = Car(*curr_state)
     car.display_arrow('black')
     plt.xlim(-20, 20)

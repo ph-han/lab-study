@@ -143,12 +143,12 @@ class HybridAStarDubins:
             # self.vehicle.yaw = curr.yaw * self.yaw_resolution
             # self.vehicle.display_arrow('green')
             plt.plot(curr.x * self.xy_resolution, curr.y * self.xy_resolution, 'xg')
-            # if len(open_set) % 100 == 0:
-            plt.pause(0.01)
+            if len(open_set) % 10 == 0:
+                plt.pause(0.001)
 
             for d_path in self.dubins_action_command(curr, goal_node):
                 r_turn = Car.WHEEL_BASE / math.tan(Car.MAX_STEER)
-                rx_list, ry_list, ryaw_list = gen_path((curr.rx, curr.ry, curr.ryaw), d_path, r_turn, True, self.xy_resolution)
+                rx_list, ry_list, ryaw_list, rcost = gen_path((curr.rx, curr.ry, curr.ryaw), d_path, r_turn, True, self.xy_resolution)
 
                 rx = rx_list[-1]
                 ry = ry_list[-1]
@@ -167,7 +167,9 @@ class HybridAStarDubins:
                     continue
 
                 # calculating g cost (including change direction, sterring angle etc..)
-                next_g_cost = calc_cost(d_path, r_turn)
+                next_g_cost = curr.g + rcost
+                print(f"next_g_cost = {next_g_cost}")
+                # next_g_cost = calc_cost(d_path, r_turn)
 
                 nxlist = curr.xlist[:] + rx_list[:]
                 nylist = curr.ylist[:] + ry_list[:]
@@ -185,9 +187,12 @@ class HybridAStarDubins:
                     continue
 
                 if h_idx not in self.holonomic_table:
-                    self.holonomic_table[h_idx] = 0.0
+                    self.holonomic_table[h_idx] = 999999
 
-                next_node.h = self.holonomic_table[h_idx]
+                next_node.h = max(calc_cost(d_path, r_turn), self.holonomic_table[h_idx])
+                print(f"next_h_cost = {next_node.h}")
+                # next_node.h = self.holonomic_table[h_idx]
+                print(calc_cost(d_path, r_turn), self.holonomic_table[h_idx])
 
                 next_node.f = next_g_cost + next_node.h
 
@@ -232,7 +237,7 @@ class HybridAStarDubins:
             [-1, -1, math.sqrt(2)]
         ]
 
-        cost_weight = 50.0
+        cost_weight = 1.0
 
         open_set = dict()
         closed_set = dict()
@@ -287,7 +292,7 @@ class HybridAStarDubins:
 
 if __name__ == "__main__":
     start = [10.0, 10.0, np.deg2rad(90.0)]
-    goal = [50.0, 50.0, np.deg2rad(90.0)]
+    goal = [55.0, 30.0, np.deg2rad(0.0)]
     arrow_length = 2
     dx = arrow_length * math.cos(goal[2])
     dy = arrow_length * math.sin(goal[2])
@@ -335,6 +340,10 @@ if __name__ == "__main__":
     #
     # for i in range(25):
     #     ox.append(50.0)
+    #     oy.append(i)
+    #
+    # for i in range(10, 30):
+    #     ox.append(30.0)
     #     oy.append(i)
     #
     # for i in range(10):

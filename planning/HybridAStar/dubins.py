@@ -348,7 +348,7 @@ def gen_path(start_pos, dubins_params, r_turn, one_step=False, one_step_size=0):
                 path_yaw.append(yaw)
                 curr_cost = cost + d
                 if one_step and curr_cost > one_step_size:
-                    return path_x, path_y, path_yaw
+                    return path_x, path_y, path_yaw, curr_cost
             path_x.append(base_x + p[1] * np.cos(yaw))
             path_y.append(base_y + p[1] * np.sin(yaw))
             path_yaw.append(yaw)
@@ -365,7 +365,7 @@ def gen_path(start_pos, dubins_params, r_turn, one_step=False, one_step_size=0):
                 path_yaw.append(nyaw)
                 curr_cost = r_turn * abs(np.deg2rad(y))
                 if one_step and curr_cost > one_step_size:
-                    return path_x, path_y, path_yaw
+                    return path_x, path_y, path_yaw, curr_cost
 
             nx, ny = rotate_point(base_x, base_y, p[2], np.deg2rad(goal_angle))
             path_x.append(nx)
