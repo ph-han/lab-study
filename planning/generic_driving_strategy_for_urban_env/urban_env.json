@@ -1,0 +1,32 @@
+{
+  "traffic_red_sign": {
+    "type": "static",
+    "data": [
+      {
+        "start_t": 0,
+        "end_t": 3,
+        "begin_distance": 3
+      }
+    ]
+  },
+  "crossing_pedestrian": {
+    "type": "static",
+    "data": [
+      {
+        "start_t": 1,
+        "end_t": 4,
+        "begin_distance": 5
+      }
+    ]
+  },
+  "vehicles": { // 추가 예정 정보
+    "type": "dynamic",
+    "data": [
+      {
+        "start_t": 1,
+        "end_t": 4,
+        "begin_distance": 5
+      }
+    ]
+  }
+}
