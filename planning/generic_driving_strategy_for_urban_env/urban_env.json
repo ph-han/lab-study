@@ -1,32 +1,32 @@
 {
-  "traffic_red_sign": {
+  "traffic_red_sign1": {
     "type": "static",
-    "data": [
-      {
-        "start_t": 0,
-        "end_t": 3,
-        "begin_distance": 3
-      }
-    ]
+    "start_t": 0,
+    "end_t": 3,
+    "begin_distance": 2,
+    "gap": 1
+  },
+  "traffic_red_sign2": {
+    "type": "static",
+    "start_t": 0,
+    "end_t": 3,
+    "begin_distance": 4,
+    "gap": 1
   },
   "crossing_pedestrian": {
     "type": "static",
-    "data": [
-      {
-        "start_t": 1,
-        "end_t": 4,
-        "begin_distance": 5
-      }
-    ]
+    "start_t": 1,
+    "end_t": 4,
+    "begin_distance": 5,
+    "gap": 0
   },
-  "vehicles": { // 추가 예정 정보
+  "vehicles": {
     "type": "dynamic",
-    "data": [
-      {
-        "start_t": 1,
-        "end_t": 4,
-        "begin_distance": 5
-      }
-    ]
+    "start_t": 7,
+    "end_t": 18,
+    "begin_distance": 9,
+    "following_distance": 3,
+    "obj_len": 1,
+    "gap": 0
   }
 }
