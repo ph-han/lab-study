@@ -1,30 +1,26 @@
 {
-  "traffic_red_sign1": {
+  "e1": {
+    "name": "red_sign",
     "type": "static",
     "start_t": 0,
     "end_t": 3,
-    "begin_distance": 2,
-    "gap": 1
+    "begin_distance": 3,
+    "gap": 3
   },
-  "traffic_red_sign2": {
+  "e2": {
+    "name": "crossing_p",
     "type": "static",
-    "start_t": 0,
-    "end_t": 3,
-    "begin_distance": 4,
-    "gap": 1
+    "start_t": 3,
+    "end_t": 7,
+    "begin_distance": 15,
+    "gap": 3
   },
-  "crossing_pedestrian": {
-    "type": "static",
-    "start_t": 1,
-    "end_t": 4,
-    "begin_distance": 5,
-    "gap": 0
-  },
-  "vehicles": {
+  "e3": {
+    "name": "vehicles",
     "type": "dynamic",
     "start_t": 7,
     "end_t": 18,
-    "begin_distance": 9,
+    "begin_distance": 27,
     "following_distance": 3,
     "obj_len": 1,
     "gap": 0

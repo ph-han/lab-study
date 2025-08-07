@@ -85,16 +85,16 @@ class Car:
 
         return x, y, yaw
 
-    def display_arrow(self, color="red"):
+    def display_arrow(self, ax, color="red"):
         arrow_length = self.WHEEL_BASE * 0.5
         dx = arrow_length * cos(self.yaw)
         dy = arrow_length * sin(self.yaw)
 
-        plt.arrow(self.x, self.y, dx, dy,
+        ax.arrow(self.x, self.y, dx, dy,
                   head_width=0.3, head_length=0.4,
                   fc=color, ec=color)
 
-    def display_wheels(self, steer_rot, body_rot):
+    def display_wheels(self, steer_rot, body_rot, ax):
         quarter_wheel_width = self.TW / 4
         wheel = np.array([
             [-self.TR, -self.TR, self.TR, self.TR, -self.TR],
@@ -119,12 +119,12 @@ class Car:
                            + np.array([[self.x], [self.y]])
 
 
-        plt.plot(front_left_wheel[0, :], front_left_wheel[1, :], "black")
-        plt.plot(front_right_wheel[0, :], front_right_wheel[1, :], "black")
-        plt.plot(rear_left_wheel[0, :], rear_left_wheel[1, :], "black")
-        plt.plot(rear_right_wheel[0, :], rear_right_wheel[1, :], "black")
+        ax.plot(front_left_wheel[0, :], front_left_wheel[1, :], "black")
+        ax.plot(front_right_wheel[0, :], front_right_wheel[1, :], "black")
+        ax.plot(rear_left_wheel[0, :], rear_left_wheel[1, :], "black")
+        ax.plot(rear_right_wheel[0, :], rear_right_wheel[1, :], "black")
 
-    def display_car(self, body_rot):
+    def display_car(self, body_rot, ax):
         half_width = self.OVERALL_WIDTH / 2
 
         car = np.array([
@@ -134,9 +134,9 @@ class Car:
         ], dtype=np.float32)
 
         car_pos = np.dot(body_rot, car) + np.array([[self.x], [self.y]])
-        plt.plot(car_pos[0, :], car_pos[1, :], "black")
+        ax.plot(car_pos[0, :], car_pos[1, :], "black")
 
-    def draw(self):
+    def draw(self, ax):
         body_rot = np.array([
             [cos(self.yaw), -sin(self.yaw)],
             [sin(self.yaw), cos(self.yaw)]
@@ -148,9 +148,9 @@ class Car:
             [sin(steer_yaw), cos(steer_yaw)]
         ], dtype=np.float32)
 
-        self.display_car(body_rot)
-        self.display_wheels(steer_rot, body_rot)
-        self.display_arrow()
+        self.display_car(body_rot, ax)
+        self.display_wheels(steer_rot, body_rot, ax)
+        self.display_arrow(ax)
 
 from scipy.interpolate import CubicSpline
 

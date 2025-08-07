@@ -2,6 +2,7 @@ import numpy as np
 import json
 import draw
 from Node import Node
+from Car import Car
 
 DELTA_T = 1.0
 
@@ -55,7 +56,7 @@ def is_collision_static(curr, target, es):
     return p1p2 <= 0 and p3p4 <= 0
 
 def get_desired_speed(s):
-    desired_speed = [30] * 1000
+    desired_speed = [30] * 1000 # 1km 전 구간 제한 30km/h
     return desired_speed[round(s)]
 
 def is_in_rect(p, p1, p2, p3, p4):
@@ -92,8 +93,9 @@ def is_collision_vehicles(target, event):
 
 def is_collision_dynamic(target, event):
     if is_in_cost_map(target, event):
-        return 10
+        return 100
     elif is_collision_vehicles(target, event):
+        print(f"inf! {target.s}, {target.t}")
         return np.inf
     else:
         return 0
@@ -141,7 +143,6 @@ def calc_event_cost(curr, target, event):
         cost += np.inf if is_collision_static(curr, target, event) else 0
     else: # dynamic event
         cost += is_collision_dynamic(target, event)
-        print(f"dynamic envet cost {cost}")
 
     return cost
 
@@ -163,7 +164,7 @@ def calc_cost(curr, a, target, event):
     return cv + ca + ce
 
 def set_of_action():
-    return [-3, -2 , -1, 0, 1, 2]
+    return [-7, -6, -5, -4, -3, -2 , -1, 0, 1, 2, 3, 4, 5, 6]
 
 def get_grid_idx(s, t, a):
     return t * 41 + a * 37 + s * 31
@@ -174,7 +175,7 @@ def get_result_path(closed, g_node):
     curr = g_node
     while curr.pidx != -1:
         draw.expansion_pos(curr.s, curr.t, 'r')
-        draw.pause(1)
+        draw.pause(0.1)
         print(f"{curr.s}, {curr.v}, {curr.t}")
         rs.append(curr.s)
         rv.append(curr.v)
@@ -227,9 +228,12 @@ def planning(start_state, events, horizen=13):
         for a in set_of_action():
             ns, nv, nt = transition_model(curr.s, curr.v, curr.t, a)
 
-            ngap = events[curr_event_key]['begin_distance'] - ns
-            # if events[curr_event_key]['end_t'] > nt and ngap < events[curr_event_key]['gap']:
-            #     continue
+            if ns < curr.s or nt < curr.t:
+                continue
+
+            ngap = abs(events[curr_event_key]['begin_distance'] - ns)
+            if events[curr_event_key]['end_t'] > nt and ngap < events[curr_event_key]['gap']:
+                continue
 
             nidx = get_grid_idx(ns, nt, a)
             if nidx in closed_set:
@@ -257,6 +261,8 @@ if __name__ == "__main__":
     # print(is_collision_static(None, None, None))
     draw.distance_time(event_json_data)
     # print(is_in_cost_map(np.array([28, 8]), event_json_data["vehicles"]))
-    rs, _, rt = planning([0, 0, 0], event_json_data, 15)
+    rs, rv, rt = planning([-2, 0, 0], event_json_data, 13)
     draw.planning_res(rs, rt)
     draw.show()
+    car = Car(-2, 0, 0)
+    draw.simulation([rs, rt], car, event_json_data)
