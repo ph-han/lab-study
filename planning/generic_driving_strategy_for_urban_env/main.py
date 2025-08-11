@@ -3,6 +3,7 @@ import json
 import draw
 from Node import Node
 from Car import Car
+from IDM import IDMVehicle
 
 DELTA_T = 1.0
 
@@ -25,7 +26,7 @@ def transition_model(s, v, t, a):
     m2 = np.array([(DELTA_T ** 2) / 2, DELTA_T, 0], dtype=np.float32)
 
     v = np.array([s, v, t, 1])
-    return np.dot(m1, v.T) + m2 * a
+    return (m1 @ v.T) + (m2 * a)
 
 def ccw(a, b, c):
     v1 = b - a
@@ -95,7 +96,6 @@ def is_collision_dynamic(target, event):
     if is_in_cost_map(target, event):
         return 100
     elif is_collision_vehicles(target, event):
-        print(f"inf! {target.s}, {target.t}")
         return np.inf
     else:
         return 0
@@ -112,7 +112,7 @@ def calc_desired_v_cost(target):
     v = target.v
     des_v = get_desired_speed(target.s)
     if v > des_v:
-        return (v - des_v) ** 2
+        return (v - des_v) * (v - des_v)
     elif v == des_v:
         return 0
     else:
@@ -137,6 +137,8 @@ def calc_event_cost(curr, target, event):
     :return: cost
     '''
 
+    if not event:
+        return 0
     event_type = event['type']
     cost = 0
     if event_type == 'static':
@@ -160,11 +162,11 @@ def calc_cost(curr, a, target, event):
     cv = calc_desired_v_cost(target)
     ca = calc_a_cost(a)
     ce = calc_event_cost(curr, target, event)
-    print(f"cv = {cv}, ca = {ca}, ce = {ce}")
+    print(f"cv = {cv}, ca = {ca}, ce = {ce} | tot = {cv + ca + ce}")
     return cv + ca + ce
 
 def set_of_action():
-    return [-7, -6, -5, -4, -3, -2 , -1, 0, 1, 2, 3, 4, 5, 6]
+    return [-2, -1, 0, 1]
 
 def get_grid_idx(s, t, a):
     return t * 41 + a * 37 + s * 31
@@ -218,12 +220,13 @@ def planning(start_state, events, horizen=13):
             break
 
         print(f"{curr_id} : s, v, t = {curr.s}, {curr.v}, {curr.t} | cost = {curr.g} |event = {curr_event_key}")
-        if events[curr_event_key]['end_t'] <= curr.t:
+        if events[curr_event_key] and events[curr_event_key]['end_t'] <= curr.t:
             try:
                 curr_event_key = next(iter_event)
                 print(f"--- {curr_event_key}")
             except StopIteration:
-                pass
+                curr_event_key = 'none'
+                events['none'] = None
 
         for a in set_of_action():
             ns, nv, nt = transition_model(curr.s, curr.v, curr.t, a)
@@ -231,9 +234,9 @@ def planning(start_state, events, horizen=13):
             if ns < curr.s or nt < curr.t:
                 continue
 
-            ngap = abs(events[curr_event_key]['begin_distance'] - ns)
-            if events[curr_event_key]['end_t'] > nt and ngap < events[curr_event_key]['gap']:
-                continue
+            # ngap = abs(events[curr_event_key]['begin_distance'] - ns)
+            # if events[curr_event_key]['end_t'] > nt and ngap < events[curr_event_key]['gap']:
+            #     continue
 
             nidx = get_grid_idx(ns, nt, a)
             if nidx in closed_set:
@@ -261,8 +264,9 @@ if __name__ == "__main__":
     # print(is_collision_static(None, None, None))
     draw.distance_time(event_json_data)
     # print(is_in_cost_map(np.array([28, 8]), event_json_data["vehicles"]))
-    rs, rv, rt = planning([-2, 0, 0], event_json_data, 13)
+    rs, rv, rt = planning([0, 0, 0], event_json_data, 25)
     draw.planning_res(rs, rt)
     draw.show()
-    car = Car(-2, 0, 0)
-    draw.simulation([rs, rt], car, event_json_data)
+    ego = Car(0, 0, 0)
+    vehicle = Car(event_json_data["e3"]["begin_distance"], 0, 0)
+    draw.simulation([rs, rv, rt], ego, vehicle, event_json_data)

@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from Car import Car
+from IDM import IDMVehicle
 import json
 
 def distance_time(events):
@@ -66,7 +67,7 @@ def display_traffic_light(ax, event, road_y_bottom):
 
 state = -1
 idx = 0
-def simulation(path, car, events):
+def simulation(path, ego, others, events):
     # road_y_top = 2
     # road_y_bottom = -2
 
@@ -76,8 +77,9 @@ def simulation(path, car, events):
     # ax.plot([-10, 1000], [road_y_top, road_y_top], 'k')
     # ax.plot([-10, 1000], [road_y_bottom, road_y_bottom], 'k')
 
-    car.draw(ax)
-
+    # ego.draw(ax)
+    other_idm = IDMVehicle(others.x, 3)
+    ego_idm = IDMVehicle(ego.x, path[1][0])
 
     def update(frame):
         global state, idx
@@ -101,55 +103,63 @@ def simulation(path, car, events):
             # new_y = position_data[frame][1]
 
             # car 객체의 위치를 업데이트합니다.
-            car.x = new_x - Car.FRONT_OVERHANG - Car.WHEEL_BASE
+            ego.x = new_x - Car.FRONT_OVERHANG - Car.WHEEL_BASE
             # car.y = new_y
 
-            car.draw(ax)
+            ego.draw(ax)
 
         # 0: red, 1: yellow, 2: green
         traffic_light_lights = []
         event_key_list = list(events.keys())
 
         ek = event_key_list[idx]
-        if frame >= events[ek]['end_t'] and len(event_key_list) - 1 > idx:
-            idx += 1
+        if events[ek]:
+            if frame >= events[ek]['end_t'] and len(event_key_list) - 1 > idx:
+                idx += 1
 
-        if events[ek]['type'] == "static":
-            if events[ek]['name'] == "red_sign":
-                lights = display_traffic_light(ax, events[ek], road_y_bottom)
-                traffic_light_lights.append(lights)
-                if state != 0 and events[ek]['end_t'] > frame >= events[ek]['start_t']:
-                    state = 0
-                elif state == 0 and frame == events[ek]['end_t']:
-                    state = 2
+            if events[ek]['type'] == "static":
+                if events[ek]['name'] == "red_sign":
+                    lights = display_traffic_light(ax, events[ek], road_y_bottom)
+                    traffic_light_lights.append(lights)
+                    if state != 0 and events[ek]['end_t'] > frame >= events[ek]['start_t']:
+                        state = 0
+                    elif state == 0 and frame == events[ek]['end_t']:
+                        state = 2
 
-            elif  events[ek]['name'] == "crossing_p":
-                start_point = -2.5
-                if events[ek]['end_t'] >= frame >= events[ek]['start_t']:
-                    diff = (events[ek]["end_t"] - events[ek]["start_t"])
-                    print(start_point + (frame - events[ek]["start_t"]) * (5 / diff))
-                    ax.plot(events[ek]["begin_distance"], start_point + (frame - events[ek]["start_t"]) * (5 / diff), 'ob')
+                elif  events[ek]['name'] == "crossing_p":
+                    start_point = -2.5
+                    if events[ek]['end_t'] >= frame >= events[ek]['start_t']:
+                        diff = (events[ek]["end_t"] - events[ek]["start_t"])
+                        print(start_point + (frame - events[ek]["start_t"]) * (5 / diff))
+                        ax.plot(events[ek]["begin_distance"], start_point + (frame - events[ek]["start_t"]) * (5 / diff), 'ob')
+            else:
+                other_idm.update_acceleration(leader=None)  # 선두 차량은 앞차가 없음
+                ego_idm.update_acceleration(leader=other_idm)
+                # 2. 결정된 가속도에 따라 상태 업데이트
+                other_idm.update_state(dt=1)
+                ego_idm.update_state(dt=1)
+                others.x = other_idm.x - Car.FRONT_OVERHANG - Car.WHEEL_BASE
+                others.draw(ax)
 
-        print(frame, state, ek)
-        for lights in traffic_light_lights:
-            # 초기화
-            for light in lights:
-                light.set_color('gray')
+            for lights in traffic_light_lights:
+                # 초기화
+                for light in lights:
+                    light.set_color('gray')
 
-            if state == 0:
-                lights[2].set_color('red')
-            elif state == 1:
-                lights[1].set_color('yellow')
-            elif state == 2:
-                lights[0].set_color('green')
+                if state == 0:
+                    lights[2].set_color('red')
+                elif state == 1:
+                    lights[1].set_color('yellow')
+                elif state == 2:
+                    lights[0].set_color('green')
 
 
         ax.set_aspect('equal')
-
-        ax.set_xlim(-10, 30 + frame)
+        ax.set_title(f'{frame}s | ego : {path[0][frame]} m, {path[1][frame]} m/s')
+        ax.set_xlim(-7 + path[0][frame], 50 + path[0][frame])
         ax.set_ylim(-10, 10)
 
-    ani = FuncAnimation(fig, update, frames=len(path[0]), interval=1000)
+    ani = FuncAnimation(fig, update, frames=len(path[0]), interval=1000, repeat=False)
     plt.show()
 
 def planning_res(rs, rt):
