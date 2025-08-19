@@ -2,7 +2,7 @@ import math
 import matplotlib.pyplot as plt
 
 class IDMVehicle:
-    def __init__(self, x=0, v=0, v0=3, T=1.5, a_max=1.0, b_comf=1.5, s0=2.0, length=5.0):
+    def __init__(self, x=0, v=0, v0=20, T=1.5, a_max=1.0, b_comf=1.5, s0=2.0, length=5.0):
         # --- 차량의 현재 상태 ---
         self.x = x  # 위치 (m)
         self.v = v  # 속도 (m/s)
@@ -45,62 +45,3 @@ class IDMVehicle:
         if self.v < 0:
             self.v = 0
         self.x += self.v * dt
-
-
-if __name__ == "__main__":
-    leader = IDMVehicle(x=27, v=1)
-    follower = IDMVehicle(x=10, v=3)
-
-    total_time = 40
-    dt = 0.1
-    n_steps = int(total_time / dt)
-
-    time_points = []
-    leader_positions = []
-    follower_positions = []
-    leader_velocities = []
-    follower_velocities = []
-
-    # --- 시뮬레이션 루프 (수정 없음) ---
-    for step in range(n_steps):
-        current_time = step * dt
-
-        if current_time > 10 and leader.v0 < 25:
-            leader.v0 = 25
-
-        leader.update_acceleration(leader=None)
-        follower.update_acceleration(leader=leader)
-
-        leader.update_state(dt)
-        follower.update_state(dt)
-
-        time_points.append(current_time)
-        leader_positions.append(leader.x)
-        follower_positions.append(follower.x)
-        leader_velocities.append(leader.v)
-        follower_velocities.append(follower.v)
-
-    # --- 그래프 그리기 (x축과 y축 변경) ---
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))  # 그래프를 좌우로 배치
-
-    # 1. 시간-거리 그래프 (Time vs. Distance)
-    ax1.plot(leader_positions, time_points, label='Leader Vehicle', color='blue')  # x축: 위치, y축: 시간
-    ax1.plot(follower_positions, time_points, label='Follower Vehicle', color='red', linestyle='--')  # x축: 위치, y축: 시간
-    ax1.set_title('Time vs. Distance')
-    ax1.set_xlabel('Position (m)')  # x축 레이블 변경
-    ax1.set_ylabel('Time (s)')  # y축 레이블 변경
-    ax1.legend()
-    ax1.grid(True)
-
-    # 2. 시간-속도 그래프 (Time vs. Velocity)
-    ax2.plot(leader_velocities, time_points, label='Leader Vehicle', color='blue')  # x축: 속도, y축: 시간
-    ax2.plot(follower_velocities, time_points, label='Follower Vehicle', color='red', linestyle='--')  # x축: 속도, y축: 시간
-    ax2.set_title('Time vs. Velocity')
-    ax2.set_xlabel('Velocity (m/s)')  # x축 레이블 변경
-    ax2.set_ylabel('Time (s)')  # y축 레이블 변경
-    ax2.legend()
-    ax2.grid(True)
-
-    # 그래프 레이아웃 조정 및 표시
-    plt.tight_layout()
-    plt.show()

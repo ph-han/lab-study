@@ -96,8 +96,8 @@ class UrbanSimulator:
                 start_t = matching_event.get('start_t', 0)
                 end_t = matching_event.get('end_t', 0)
 
-                npc_start_velocity = path[1][start_t] if start_t < len(path[1]) else 0
-                npc_end_velocity = path[1][end_t] if end_t < len(path[1]) else path[1][-1]
+                npc_start_velocity = end_t / (end_t - start_t)
+                npc_end_velocity = npc_start_velocity
 
                 self.npc_idms.append((IDMVehicle(npc_car.x, npc_start_velocity, v0=npc_end_velocity), start_t, end_t))
             else:
@@ -161,22 +161,21 @@ class UrbanSimulator:
             if not npc_idm:
                 continue
 
-            if npc_idm[1] < sec:
-                leader = None
-                min_dist = float('inf')
-                for other_car, other_idm in all_vehicles:
-                    if npc_car is not other_car and sec < other_idm[1]:
-                        dist = other_car.x - npc_car.x
-                        if 0 < dist < min_dist:
-                            min_dist = dist
-                            leader = other_idm[0]
+            leader = None
+            min_dist = float('inf')
+            for other_car, other_idm in all_vehicles:
+                if npc_car is not other_car and sec < other_idm[1]:
+                    dist = other_car.x - npc_car.x
+                    if 0 < dist < min_dist:
+                        min_dist = dist
+                        leader = other_idm[0]
 
 
-                if sec < npc_idm[2] and self.ego.x < npc_car.x:
-                    npc_idm[0].update_acceleration(leader=leader)
-                    npc_idm[0].update_state(dt=0.02)
-                    npc_car.x = npc_idm[0].x - Car.FRONT_OVERHANG - Car.WHEEL_BASE
-                    npc_car.draw(self.ax)
+            if sec < npc_idm[2] and self.ego.x < npc_car.x:
+                npc_idm[0].update_acceleration(leader=leader)
+                npc_idm[0].update_state(dt=0.02)
+                npc_car.x = npc_idm[0].x - Car.FRONT_OVERHANG - Car.WHEEL_BASE
+                npc_car.draw(self.ax)
 
     def _handle_static_events(self, sec):
         for event in self.events.values():
@@ -248,6 +247,6 @@ if __name__ == '__main__':
     with open("urban_env.json", 'r') as json_file:
         event_json_data = json.load(json_file)
     car = Car(0, 0, 0)
-    # This is just for standalone testing of draw.py, main logic is in main.py
+    # This is just for standalone testing of sim.py, main logic is in main.py
     # simulation(None, car, [], event_json_data) 
     show()

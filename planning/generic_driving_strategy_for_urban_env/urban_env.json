@@ -10,9 +10,9 @@
   "e2": {
     "name": "crossing_p",
     "type": "static",
-    "start_t": 3,
-    "end_t": 7,
-    "begin_distance": 6,
+    "start_t": 1,
+    "end_t": 5,
+    "begin_distance": 5,
     "gap": 3
   },
   "e3": {
@@ -20,9 +20,9 @@
     "type": "dynamic",
     "start_t": 7,
     "end_t": 18,
-    "begin_distance": 27,
-    "following_distance": 3,
-    "obj_len": 1,
+    "begin_distance": 33,
+    "following_distance": 8,
+    "obj_len": 2,
     "gap": 0
   }
 }
