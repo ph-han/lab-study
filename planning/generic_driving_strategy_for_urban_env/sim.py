@@ -47,9 +47,9 @@ def distance_time(events):
             plt.plot((p2[0], p4[0]), (p2[1], p4[1]), '-b')
             plt.plot((p4[0], p6[0]), (p4[1], p6[1]), '-b')
 
-    plt.xticks(np.arange(0, 51, 10))
+    plt.xticks(np.arange(0, 1001, 10))
     plt.xlabel("distance [m]")
-    plt.yticks(np.arange(0, 16, 5))
+    plt.yticks(np.arange(0, 31, 5))
     plt.ylabel("time [s]")
     plt.grid(True)
 
@@ -151,31 +151,29 @@ class UrbanSimulator:
     def _update_ego_position(self, frame):
         new_x = self.path[0][frame]
         self.ego.x = new_x - Car.FRONT_OVERHANG - Car.WHEEL_BASE
+        self.ax.text(self.ego.x + Car.WHEEL_BASE // 2, self.ego.y + Car.OVERALL_WIDTH + 2, f'ego0', ha='center',
+                     va='top')
         self.ego.draw(self.ax)
 
     def _update_npcs(self, sec):
-
         all_vehicles = list(zip(self.npcs, self.npc_idms))
         
         for i, (npc_car, npc_idm) in enumerate(zip(self.npcs, self.npc_idms)):
             if not npc_idm:
                 continue
 
-            leader = None
-            min_dist = float('inf')
-            for other_car, other_idm in all_vehicles:
-                if npc_car is not other_car and sec < other_idm[1]:
-                    dist = other_car.x - npc_car.x
-                    if 0 < dist < min_dist:
-                        min_dist = dist
-                        leader = other_idm[0]
+            if sec < npc_idm[2] :
+                leader = None
+                if i < len(self.npc_idms) - 1:
+                    leader = self.npc_idms[i + 1][0]
 
-
-            if sec < npc_idm[2] and self.ego.x < npc_car.x:
                 npc_idm[0].update_acceleration(leader=leader)
                 npc_idm[0].update_state(dt=0.02)
                 npc_car.x = npc_idm[0].x - Car.FRONT_OVERHANG - Car.WHEEL_BASE
+                self.ax.text(npc_car.x + Car.WHEEL_BASE // 2, npc_car.y + npc_car.OVERALL_WIDTH + 2, f'npc_{i} {npc_idm[0].v}', ha='center', va='top')
                 npc_car.draw(self.ax)
+            else:
+                print(f"npc_{i} pos: {npc_car.x}")
 
     def _handle_static_events(self, sec):
         for event in self.events.values():

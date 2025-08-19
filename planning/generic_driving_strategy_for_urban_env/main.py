@@ -5,8 +5,6 @@ import random
 import sim
 from Node import Node
 from Car import Car
-from IDM import IDMVehicle
-import matplotlib.pyplot as plt
 
 DELTA_T = 1.0
 
@@ -20,7 +18,7 @@ def generate_random_vehicles(start_num, num_vehicles, max_distance=100, max_time
         # Generate random properties
         start_t = random.randint(0, int(max_time * 0.7))  # Start within the first 70% of the timeline
         begin_distance = random.uniform(10, max_distance)  # Don't spawn right at the beginning
-        obj_len = 4  # Standard object length
+        obj_len = 4.7  # Standard object length
 
         # Simple duration for the event
         end_t = start_t + random.randint(5, 15)
@@ -37,14 +35,12 @@ def generate_random_vehicles(start_num, num_vehicles, max_distance=100, max_time
         tries += 1
         if not is_collision:
             new_vehicle = {
-                # name will be assigned later
                 "type": "dynamic",
                 "start_t": start_t,
                 "end_t": end_t,
                 "begin_distance": begin_distance,
                 "following_distance": 8,
                 "obj_len": obj_len,
-                "idm": IDMVehicle(begin_distance, 0, 20),
                 "gap": 0
             }
             vehicles.append(new_vehicle)
@@ -113,17 +109,24 @@ def is_in_rect(p, p1, p2, p3, p4):
     return not (is_neg and is_posi)
 
 def is_in_cost_map(target, event):
-    # 속도는 1로 가정
     p1 = np.array([event['begin_distance'] - event['following_distance'], event['start_t']])
     p2 = np.array([event['begin_distance'], event['start_t']])
     p3 = np.array([p1[0] + event['end_t'], event['end_t']])
     p4 = np.array([p2[0] + event['end_t'], event['end_t']])
 
-
-
     p = np.array([target.s, target.t])
 
-    return is_in_rect(p, p, p2, p4, p3)
+    a = event['end_t'] / (event['end_t'] - event['start_t'])
+    b = p2[0] - a * p2[1]
+
+    s = a * target.t + b
+    if abs(s - target.s) < event['following_distance']:
+        print("s: ", s, ", t: ", abs(s - target.s))
+        print("test : ", 300 / abs(s - target.s))
+        # return 3000 / abs(s - target.s)
+        return 1500 / abs(s - target.s)
+    return 0
+    # return is_in_rect(p, p, p2, p4, p3)
 
 def is_collision_vehicles(target, event):
     p2 = np.array([event['begin_distance'], event['start_t']])
@@ -136,14 +139,14 @@ def is_collision_vehicles(target, event):
     d2 = ccw(p5, p6, p)
     d3 = ccw(p6, p4, p)
     d4 = ccw(p4, p2, p)
-    is_zero = d1 == 0 or d2 == 0 or d3 == 0 or d4 == 0
-    return is_zero or (is_in_rect(p, p2, p5, p6, p4) or (ccw(p5, p6, p) < 0))
+    return is_in_rect(p, p2, p5, p6, p4) or (ccw(p5, p6, p) < 0)
 
 def is_collision_dynamic(target, event):
+    cost = is_in_cost_map(target, event)
     if is_in_cost_map(target, event):
-        return 300
+        return cost
     elif is_collision_vehicles(target, event):
-        return 99999
+        return np.inf
     else:
         return 0
 
@@ -167,7 +170,7 @@ def calc_event_cost(curr, target, event):
     event_type = event['type']
     cost = 0
     if event_type == 'static':
-        cost += 99999 if is_collision_static(curr, target, event) else 0
+        cost += np.inf if is_collision_static(curr, target, event) else 0
     else: # dynamic event
         cost += is_collision_dynamic(target, event)
 
@@ -175,7 +178,7 @@ def calc_event_cost(curr, target, event):
 
 def calc_cost(curr, a, target, event):
     cv = calc_desired_v_cost(target)
-    ca = calc_a_cost(a) * 0.25
+    ca = calc_a_cost(a)
     ce = calc_event_cost(curr, target, event)
     return cv + ca + ce
 

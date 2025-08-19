@@ -2,7 +2,7 @@ import math
 import matplotlib.pyplot as plt
 
 class IDMVehicle:
-    def __init__(self, x=0, v=0, v0=20, T=1.5, a_max=1.0, b_comf=1.5, s0=2.0, length=5.0):
+    def __init__(self, x=0, v=0, v0=20, T=1.5, a_max=1.0, b_comf=1.5, s0=2.0, length=4.0):
         # --- 차량의 현재 상태 ---
         self.x = x  # 위치 (m)
         self.v = v  # 속도 (m/s)
