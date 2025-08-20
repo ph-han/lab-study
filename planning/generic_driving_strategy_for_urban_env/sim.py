@@ -3,9 +3,10 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from Car import Car
 from IDM import IDMVehicle
+from driving_planning import planning
 import json
 
-def distance_time(events):
+def distance_time(axes, events):
     if not events:
         return
     iter_event = iter(events)
@@ -27,31 +28,31 @@ def distance_time(events):
             end_t = event_data.get('end_t', 0)
             y = np.arange(start_t, end_t + 1)
             x = [event_data.get('begin_distance', 0)] * len(y)
-            plt.plot(x, y, '-r')
+            axes.plot(x, y, '-r')
         elif type == "dynamic":
             p1 = (event_data['begin_distance'] - event_data['following_distance'], event_data['start_t'])
             p2 = (event_data['begin_distance'], event_data['start_t'])
             p3 = (p1[0] + event_data['end_t'], event_data['end_t'])
             p4 = (p2[0] + event_data['end_t'], event_data['end_t'])
 
-            plt.plot((p1[0], p2[0]), (p1[1], p2[1]), '-c')
-            plt.plot((p1[0], p3[0]), (p1[1], p3[1]), '-c')
-            plt.plot((p4[0], p2[0]), (p4[1], p2[1]), '-c')
-            plt.plot((p3[0], p4[0]), (p3[1], p4[1]), '-c')
+            axes.plot((p1[0], p2[0]), (p1[1], p2[1]), '-c')
+            axes.plot((p1[0], p3[0]), (p1[1], p3[1]), '-c')
+            axes.plot((p4[0], p2[0]), (p4[1], p2[1]), '-c')
+            axes.plot((p3[0], p4[0]), (p3[1], p4[1]), '-c')
 
             p5 = (p2[0] + event_data['obj_len'], event_data['start_t'])
             p6 = (p4[0] + event_data['obj_len'], event_data['end_t'])
 
-            plt.plot((p2[0], p5[0]), (p2[1], p5[1]), '-b')
-            plt.plot((p6[0], p5[0]), (p6[1], p5[1]), '-b')
-            plt.plot((p2[0], p4[0]), (p2[1], p4[1]), '-b')
-            plt.plot((p4[0], p6[0]), (p4[1], p6[1]), '-b')
+            axes.plot((p2[0], p5[0]), (p2[1], p5[1]), '-b')
+            axes.plot((p6[0], p5[0]), (p6[1], p5[1]), '-b')
+            axes.plot((p2[0], p4[0]), (p2[1], p4[1]), '-b')
+            axes.plot((p4[0], p6[0]), (p4[1], p6[1]), '-b')
 
-    plt.xticks(np.arange(0, 1001, 10))
-    plt.xlabel("distance [m]")
-    plt.yticks(np.arange(0, 31, 5))
-    plt.ylabel("time [s]")
-    plt.grid(True)
+    # axes.xticks(np.arange(0, 101, 10))
+    axes.set_xlabel("distance [m]")
+    # axes.yticks(np.arange(0, 31, 5))
+    axes.set_ylabel("time [s]")
+    axes.grid(True)
 
 def display_traffic_light(ax, event, road_y_bottom):
     w, h = 2, 4.5
@@ -69,9 +70,10 @@ def display_traffic_light(ax, event, road_y_bottom):
 
 
 class UrbanSimulator:
-    def __init__(self, fig, ax, path, ego, npcs, events):
+    def __init__(self, fig, axes, path, ego, npcs, events):
         self.fig = fig
-        self.ax = ax
+        self.ax0 = axes[0]
+        self.ax1 = axes[1]
         self.path = path
         self.ego = ego
         self.npcs = npcs
@@ -85,7 +87,7 @@ class UrbanSimulator:
         self.npc_idms = []
         dynamic_events = [e for e in events.values() if e and e.get('type') == 'dynamic']
 
-        for npc_car in self.npcs:
+        for npc_car, npc_event_key in self.npcs:
             matching_event = None
             for event in dynamic_events:
                 if abs(event['begin_distance'] - npc_car.x) < 0.1:
@@ -104,39 +106,54 @@ class UrbanSimulator:
                 self.npc_idms.append(None)
 
         self.ego_idm = IDMVehicle(ego.x, path[1][0])
-        self.path = self.upsample_data(20) # Changed for smoother animation
+        self.path = self.upsample_data(self.path, 20) # Changed for smoother animation
 
-    def upsample_data(self, ms):
+    def upsample_data(self, path, ms):
         upsample_s = []
         upsample_v = []
         upsample_t = []
 
-        if not self.path or not self.path[0]:
+        if not path or not path[0]:
             return [[], [], []]
 
         points_per_step = 1000 // ms
-        for idx in range(len(self.path[0]) - 1):
-            diff_s = self.path[0][idx + 1] - self.path[0][idx]
-            diff_v = self.path[1][idx + 1] - self.path[1][idx]
-            diff_t = self.path[2][idx + 1] - self.path[2][idx]
+        for idx in range(len(path[0]) - 1):
+            diff_s = path[0][idx + 1] - path[0][idx]
+            diff_v = path[1][idx + 1] - path[1][idx]
+            diff_t = path[2][idx + 1] - path[2][idx]
             for new_idx in range(points_per_step):
-                upsample_s.append(self.path[0][idx] + (diff_s / points_per_step) * new_idx)
-                upsample_v.append(self.path[1][idx] + (diff_v / points_per_step) * new_idx)
-                upsample_t.append(self.path[2][idx] + (diff_t / points_per_step) * new_idx)
+                upsample_s.append(path[0][idx] + (diff_s / points_per_step) * new_idx)
+                upsample_v.append(path[1][idx] + (diff_v / points_per_step) * new_idx)
+                upsample_t.append(path[2][idx] + (diff_t / points_per_step) * new_idx)
         
-        upsample_s.append(self.path[0][-1])
-        upsample_v.append(self.path[1][-1])
-        upsample_t.append(self.path[2][-1])
+        upsample_s.append(path[0][-1])
+        upsample_v.append(path[1][-1])
+        upsample_t.append(path[2][-1])
 
         return [upsample_s, upsample_v, upsample_t]
+
+    def _update_path(self, frame):
+        curr_state = self.ego.x + Car.FRONT_OVERHANG + Car.WHEEL_BASE, self.path[1][frame], frame // 50
+        print("curr state: ", curr_state)
+        new_rs, new_rv, new_rt = planning(curr_state, self.events, int(self.path[2][frame]) + 13)
+        self.ax0.clear()
+        distance_time(self.ax0, self.events)
+        self.ax0.plot(new_rs, new_rt, '-ob')
+        new_rs, new_rv, new_rt = self.upsample_data([new_rs, new_rv, new_rt], 20)
+        self.path[0] = self.path[0][:frame + 1] + new_rs
+        self.path[1] = self.path[1][:frame + 1] + new_rv
+        self.path[2] = self.path[2][:frame + 1] + new_rt
+
 
     def update(self, frame):
         if frame >= len(self.path[0]):
             return
 
-        # Time in seconds, based on 50 FPS (1000ms / 20ms interval)
         sec = frame / 50.0
 
+        if sec % 3 == 0:
+            print("sec: ", sec, frame)
+            self._update_path(frame)
         self._draw_background()
         self._update_ego_position(frame)
         self._update_npcs(sec)
@@ -144,36 +161,38 @@ class UrbanSimulator:
         self._update_plot_view(frame, sec)
 
     def _draw_background(self):
-        self.ax.clear()
-        self.ax.plot([-10, 1000], [self.road_y_top, self.road_y_top], 'k')
-        self.ax.plot([-10, 1000], [self.road_y_bottom, self.road_y_bottom], 'k')
+        self.ax1.clear()
+        self.ax1.plot([-10, 1000], [self.road_y_top, self.road_y_top], 'k')
+        self.ax1.plot([-10, 1000], [self.road_y_bottom, self.road_y_bottom], 'k')
 
     def _update_ego_position(self, frame):
         new_x = self.path[0][frame]
         self.ego.x = new_x - Car.FRONT_OVERHANG - Car.WHEEL_BASE
-        self.ax.text(self.ego.x + Car.WHEEL_BASE // 2, self.ego.y + Car.OVERALL_WIDTH + 2, f'ego0', ha='center',
+        self.ax1.text(self.ego.x + Car.WHEEL_BASE // 2, self.ego.y + Car.OVERALL_WIDTH + 2, f'ego0', ha='center',
                      va='top')
-        self.ego.draw(self.ax)
+        self.ego.draw(self.ax1)
 
     def _update_npcs(self, sec):
-        all_vehicles = list(zip(self.npcs, self.npc_idms))
-        
-        for i, (npc_car, npc_idm) in enumerate(zip(self.npcs, self.npc_idms)):
+        for i, (npc_info, npc_idm) in enumerate(zip(self.npcs, self.npc_idms)):
             if not npc_idm:
                 continue
 
             if sec < npc_idm[2] :
                 leader = None
-                if i < len(self.npc_idms) - 1:
+                if i < len(self.npc_idms) - 1 and sec < self.npc_idms[i + 1][1]:
                     leader = self.npc_idms[i + 1][0]
 
-                npc_idm[0].update_acceleration(leader=leader)
-                npc_idm[0].update_state(dt=0.02)
-                npc_car.x = npc_idm[0].x - Car.FRONT_OVERHANG - Car.WHEEL_BASE
-                self.ax.text(npc_car.x + Car.WHEEL_BASE // 2, npc_car.y + npc_car.OVERALL_WIDTH + 2, f'npc_{i} {npc_idm[0].v}', ha='center', va='top')
-                npc_car.draw(self.ax)
-            else:
-                print(f"npc_{i} pos: {npc_car.x}")
+                if npc_idm[1] <= sec - 1:
+                    npc_idm[0].update_acceleration(leader=leader)
+                    npc_idm[0].update_state(dt=0.02)
+                    diff = self.events[npc_info[1]]['end_t'] - self.events[npc_info[1]]['start_t']
+                    vs = npc_idm[0].v * diff
+                    if vs != self.events[npc_info[1]]['vs']:
+                        self.events[npc_info[1]]['start_t'] = int(sec)
+                        self.events[npc_info[1]]['vs'] = vs
+                    npc_info[0].x = npc_idm[0].x - Car.FRONT_OVERHANG - Car.WHEEL_BASE
+                    self.ax1.text(npc_info[0].x + Car.WHEEL_BASE // 2, npc_info[0].y + npc_info[0].OVERALL_WIDTH + 2, f'npc_{i} | {npc_idm[0].v:.2f}m/s', ha='center', va='top')
+                    npc_info[0].draw(self.ax1)
 
     def _handle_static_events(self, sec):
         for event in self.events.values():
@@ -184,7 +203,7 @@ class UrbanSimulator:
 
     def _handle_static_event(self, sec, event, traffic_light_lights):
         if event['name'] == "red_sign":
-            lights = display_traffic_light(self.ax, event, self.road_y_bottom)
+            lights = display_traffic_light(self.ax1, event, self.road_y_bottom)
             traffic_light_lights.append(lights)
             if self.traffic_light_state != 0 and event['start_t'] <= sec < event['end_t']:
                 self.traffic_light_state = 0
@@ -197,7 +216,7 @@ class UrbanSimulator:
                 duration = event["end_t"] - event["start_t"]
                 time_elapsed = sec - event["start_t"]
                 pedestrian_y = start_point + time_elapsed * (5 / duration) if duration > 0 else start_point
-                self.ax.plot(event["begin_distance"], pedestrian_y, 'ob')
+                self.ax1.plot(event["begin_distance"], pedestrian_y, 'ob')
 
     def _update_traffic_light_colors(self, traffic_light_lights):
         for lights in traffic_light_lights:
@@ -211,26 +230,23 @@ class UrbanSimulator:
                 lights[0].set_color('green')
 
     def _update_plot_view(self, frame, sec):
-        self.ax.set_aspect('equal')
-        self.ax.set_title(f'{sec:.1f}s | ego : {self.path[0][frame]:.2f} m, {self.path[1][frame]:.2f} m/s')
-        self.ax.set_xlim(-7 + self.path[0][frame], 50 + self.path[0][frame])
-        self.ax.set_ylim(-10, 10)
+        self.ax1.set_aspect('equal')
+        self.ax1.set_title(f'{sec:.1f}s | ego : {self.path[0][frame]:.2f} m, {self.path[1][frame]:.2f} m/s')
+        self.ax1.set_xlim(-7 + self.path[0][frame], 50 + self.path[0][frame])
+        self.ax1.set_ylim(-10, 10)
 
-def simulation(path, ego, npcs, events):
-    fig, ax = plt.subplots()
-    
-    if not path or not path[0]:
-        print("Warning: Empty path provided to simulation.")
-        return
+def simulation(ego, npcs, events):
+    # path = planning([0, 0, 0], events, 30)
+    fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+    #
+    # distance_time(axes[0], events)
+    # axes[0].plot(path[0], path[2], '-ob')
 
-    simulator = UrbanSimulator(fig, ax, path, ego, npcs, events)
+    simulator = UrbanSimulator(fig, axes, [[0], [0], [0]], ego, npcs, events)
 
-    ani = FuncAnimation(fig, simulator.update, frames=len(simulator.path[0]), interval=20, repeat=False)
+    ani = FuncAnimation(fig, simulator.update, frames=3000, interval=20, repeat=False)
+    plt.tight_layout()
     plt.show()
-
-def planning_res(rs, rt):
-    plt.plot(rs, rt, '-ob')
-    plt.savefig('distance_time.jpg')
 
 def expansion_pos(s, t, color='g'):
     plt.plot(s, t, f'x{color}')
