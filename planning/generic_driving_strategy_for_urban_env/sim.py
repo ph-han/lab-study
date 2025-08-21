@@ -140,9 +140,9 @@ class UrbanSimulator:
         distance_time(self.ax0, self.events)
         self.ax0.plot(new_rs, new_rt, '-ob')
         new_rs, new_rv, new_rt = self.upsample_data([new_rs, new_rv, new_rt], 20)
-        self.path[0] = self.path[0][:frame + 1] + new_rs
-        self.path[1] = self.path[1][:frame + 1] + new_rv
-        self.path[2] = self.path[2][:frame + 1] + new_rt
+        self.path[0] = self.path[0][:frame] + new_rs
+        self.path[1] = self.path[1][:frame] + new_rv
+        self.path[2] = self.path[2][:frame] + new_rt
 
 
     def update(self, frame):
