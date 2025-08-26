@@ -133,7 +133,7 @@ class UrbanSimulator:
         return [upsample_s, upsample_v, upsample_t]
 
     def _update_path(self, frame):
-        curr_state = self.ego.x + Car.FRONT_OVERHANG + Car.WHEEL_BASE, self.path[1][frame], frame // 50
+        curr_state = (self.ego.x + Car.FRONT_OVERHANG + Car.WHEEL_BASE, self.path[1][frame], frame // 50) if frame > 0 else (0, 0, 0)
         print("curr state: ", curr_state)
         new_rs, new_rv, new_rt = planning(curr_state, self.events, int(self.path[2][frame]) + 13)
         self.ax0.clear()
