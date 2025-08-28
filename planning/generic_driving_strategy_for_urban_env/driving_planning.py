@@ -94,7 +94,7 @@ def is_collision_static(curr, target, es):
     return p1p2 <= 0 and p3p4 <= 0
 
 def get_desired_speed(s):
-    desired_speed = [30] * 1000 # 1km 전 구간 제한 30km/h
+    desired_speed = [30] * 100000 # 1km 전 구간 제한 30km/h
     return desired_speed[round(s)]
 
 def is_in_rect(p, p1, p2, p3, p4):
@@ -217,6 +217,7 @@ def planning(start_state, events, horizen=13):
     open_set[get_grid_idx(s, t, 0)] = s_node
     iter_event = iter(events)
     curr_event_key = next(iter_event)
+
     while open_set:
         curr_id = min(open_set, key=lambda o: open_set[o].g + w * open_set[o].h)
         curr = open_set[curr_id]
@@ -238,14 +239,15 @@ def planning(start_state, events, horizen=13):
             break
 
         # print(f"{curr_id} : s, v, t = {curr.s}, {curr.v}, {curr.t} | cost = {curr.g} |event = {curr_event_key}")
-        if events.get(curr_event_key) and events[curr_event_key]['end_t'] < curr.t:
+        while events.get(curr_event_key) and events[curr_event_key]['end_t'] < curr.t:
             try:
                 curr_event_key = next(iter_event)
                 # print(f"--- {curr_event_key}")
             except StopIteration:
                 curr_event_key = 'none'
                 events['none'] = None
-
+        if len(open_set) == 1:
+            print(curr_event_key)
         for a in set_of_action():
             ns, nv, nt = transition_model(curr.s, curr.v, curr.t, a)
 

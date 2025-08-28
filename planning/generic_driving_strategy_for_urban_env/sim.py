@@ -20,7 +20,7 @@ def distance_time(axes, events):
         if not event_data:
             continue
 
-        print(f"{event_data.get('name', 'N/A')} event type : {event_data.get('type', 'N/A')}")
+        # print(f"{event_data.get('name', 'N/A')} event type : {event_data.get('type', 'N/A')}")
         type = event_data.get('type')
 
         if type == "static":
@@ -133,16 +133,16 @@ class UrbanSimulator:
         return [upsample_s, upsample_v, upsample_t]
 
     def _update_path(self, frame):
-        curr_state = (self.ego.x + Car.FRONT_OVERHANG + Car.WHEEL_BASE, self.path[1][frame], frame // 50) if frame > 0 else (0, 0, 0)
-        print("curr state: ", curr_state)
-        new_rs, new_rv, new_rt = planning(curr_state, self.events, int(self.path[2][frame]) + 13)
+        curr_state = (self.path[0][frame], self.path[1][frame], frame // 50)
+        print("curr frame: ", frame, len(self.path[1]))
+        new_rs, new_rv, new_rt = planning(curr_state, self.events, (frame // 50) + 13)
         self.ax0.clear()
         distance_time(self.ax0, self.events)
         self.ax0.plot(new_rs, new_rt, '-ob')
         new_rs, new_rv, new_rt = self.upsample_data([new_rs, new_rv, new_rt], 20)
-        self.path[0] = self.path[0][:frame] + new_rs
-        self.path[1] = self.path[1][:frame] + new_rv
-        self.path[2] = self.path[2][:frame] + new_rt
+        self.path[0] = self.path[0][:frame + 1] + new_rs
+        self.path[1] = self.path[1][:frame + 1] + new_rv
+        self.path[2] = self.path[2][:frame + 1] + new_rt
 
 
     def update(self, frame):
@@ -151,8 +151,7 @@ class UrbanSimulator:
 
         sec = frame / 50.0
 
-        if sec % 3 == 0:
-            print("sec: ", sec, frame)
+        if frame % 5 == 0:
             self._update_path(frame)
         self._draw_background()
         self._update_ego_position(frame)
