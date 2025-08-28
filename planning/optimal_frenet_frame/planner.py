@@ -12,8 +12,11 @@ def find_closest_waypoint(curr_x, curr_y, center_line_xlist, center_line_ylist):
 def get_next_waypoint(curr_x, curr_y, center_line_xlist, center_line_ylist):
     closest_wp = find_closest_waypoint(curr_x, curr_y, center_line_xlist, center_line_ylist)
 
+    
     # loop until the next waypoint is ahead
-    while True: 
+    while True:
+        if closest_wp == len(center_line_xlist) - 1:
+            break
         traj_vec = np.array([center_line_xlist[closest_wp + 1] - center_line_xlist[closest_wp],
                             center_line_ylist[closest_wp + 1] - center_line_ylist[closest_wp]])
         ego_vec = np.array([curr_x - center_line_xlist[closest_wp], curr_y - center_line_ylist[closest_wp]])
@@ -55,12 +58,16 @@ def world2frenet(curr_x, curr_y, center_line_xlist, center_line_ylist):
     
     return frenet_s, frenet_d
 
-def frenet2world(curr_s, curr_d):
-    pass
+def frenet2world(curr_s, curr_d, center_line_xlist, center_line_ylist, center_line_slist):
+
+    wor
+
+    return world_x, world_y
 
 if __name__ == "__main__":
-    center_line_xlist = np.linspace(10, 50, 40)
+    center_line_xlist = np.linspace(10, 50, 100)
     center_line_ylist = 0.1 * (center_line_xlist**2)
+    center_line_slist = [world2frenet(rx, ry, center_line_xlist, center_line_ylist)[0] for (rx, ry) in list(zip(center_line_xlist, center_line_ylist))]
 
     ego_x, ego_y = 25, 200
     frenet_s, frenet_d = world2frenet(ego_x, ego_y, center_line_xlist, center_line_ylist)
@@ -69,4 +76,5 @@ if __name__ == "__main__":
     plt.plot(ego_x, ego_y, 'xb')
     plt.plot(center_line_xlist, center_line_ylist)
     plt.axis('equal')
+    plt.grid(True)
     plt.show()
