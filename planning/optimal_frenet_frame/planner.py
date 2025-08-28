@@ -62,10 +62,11 @@ if __name__ == "__main__":
     center_line_xlist = np.linspace(10, 50, 40)
     center_line_ylist = 0.1 * (center_line_xlist**2)
 
-    ego_x, ego_y = 25, 45
+    ego_x, ego_y = 25, 200
     frenet_s, frenet_d = world2frenet(ego_x, ego_y, center_line_xlist, center_line_ylist)
 
     print(f"frenet coordinate (s, d): ({frenet_s}, {frenet_d})")
     plt.plot(ego_x, ego_y, 'xb')
     plt.plot(center_line_xlist, center_line_ylist)
+    plt.axis('equal')
     plt.show()
