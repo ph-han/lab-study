@@ -1,6 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+from frenet_path import FrenetPath
+from polynomial import Quartic, Quintic
+
 def find_closest_waypoint(curr_x, curr_y, center_line_xlist, center_line_ylist):
     xlist = np.array(center_line_xlist)
     ylist = np.array(center_line_ylist)
@@ -12,7 +15,6 @@ def find_closest_waypoint(curr_x, curr_y, center_line_xlist, center_line_ylist):
 def get_next_waypoint(curr_x, curr_y, center_line_xlist, center_line_ylist):
     closest_wp = find_closest_waypoint(curr_x, curr_y, center_line_xlist, center_line_ylist)
 
-    
     # loop until the next waypoint is ahead
     while True:
         if closest_wp == len(center_line_xlist) - 1:
@@ -66,7 +68,7 @@ def frenet2world(curr_s, curr_d, center_line_xlist, center_line_ylist, center_li
     while curr_s > center_line_slist[next_wp] and next_wp + 1 < len(center_line_slist):
         next_wp += 1
 
-    wp = next_wp - 1
+    wp = 0 if next_wp - 1 < 0 else next_wp - 1
 
     print(f"wp: {wp}, next_wp: {next_wp}")
 
@@ -93,7 +95,7 @@ if __name__ == "__main__":
     center_line_ylist = 0.1 * (center_line_xlist**2)
     center_line_slist = [world2frenet(rx, ry, center_line_xlist, center_line_ylist)[0] for (rx, ry) in list(zip(center_line_xlist, center_line_ylist))]
 
-    ego_x, ego_y = 25, 200
+    ego_x, ego_y = 50, 250
     frenet_s, frenet_d = world2frenet(ego_x, ego_y, center_line_xlist, center_line_ylist)
     world_x, world_y, heading = frenet2world(frenet_s, frenet_d, center_line_xlist, center_line_ylist, center_line_slist)
     print(f"frenet coordinate (s, d): ({frenet_s}, {frenet_d})")
