@@ -55,14 +55,38 @@ def world2frenet(curr_x, curr_y, center_line_xlist, center_line_ylist):
             center_line_xlist[i + 1] - center_line_xlist[i],
             center_line_ylist[i + 1] - center_line_ylist[i]
         )
-    
+
+    frenet_s += np.hypot(ego_proj_vec[0], ego_proj_vec[1])
+
     return frenet_s, frenet_d
 
 def frenet2world(curr_s, curr_d, center_line_xlist, center_line_ylist, center_line_slist):
+    next_wp = 0
 
-    wor
+    while curr_s > center_line_slist[next_wp] and next_wp + 1 < len(center_line_slist):
+        next_wp += 1
 
-    return world_x, world_y
+    wp = next_wp - 1
+
+    print(f"wp: {wp}, next_wp: {next_wp}")
+
+    dx = center_line_xlist[next_wp] - center_line_xlist[wp]
+    dy = center_line_ylist[next_wp] - center_line_ylist[wp]
+
+    heading = np.arctan2(dy, dx)
+
+    seg_s = curr_s - center_line_slist[wp]
+    print(f"seg_s: {seg_s}")
+    seg_vec = np.array([
+        center_line_xlist[wp] + seg_s * np.cos(heading),
+        center_line_ylist[wp] + seg_s * np.sin(heading)
+        ])
+
+    vertical_heading = heading + (np.pi / 2)
+    world_x = seg_vec[0] + curr_d * np.cos(vertical_heading)
+    world_y = seg_vec[1] + curr_d * np.sin(vertical_heading)
+
+    return world_x, world_y, heading
 
 if __name__ == "__main__":
     center_line_xlist = np.linspace(10, 50, 100)
@@ -71,9 +95,11 @@ if __name__ == "__main__":
 
     ego_x, ego_y = 25, 200
     frenet_s, frenet_d = world2frenet(ego_x, ego_y, center_line_xlist, center_line_ylist)
-
+    world_x, world_y, heading = frenet2world(frenet_s, frenet_d, center_line_xlist, center_line_ylist, center_line_slist)
     print(f"frenet coordinate (s, d): ({frenet_s}, {frenet_d})")
+    print(f"world coordinate (x, y): ({world_x}, {world_y})")
     plt.plot(ego_x, ego_y, 'xb')
+    plt.plot(world_x, world_y, 'xr')
     plt.plot(center_line_xlist, center_line_ylist)
     plt.axis('equal')
     plt.grid(True)
