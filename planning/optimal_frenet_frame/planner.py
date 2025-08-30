@@ -1,9 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from frenet_path import FrenetPath
 import figuare
+from config import *
+from frenet_path import FrenetPath
 from polynomial import Quartic, Quintic
+
 
 def find_closest_waypoint(curr_x, curr_y, center_line_xlist, center_line_ylist):
     xlist = np.array(center_line_xlist)
@@ -92,13 +94,16 @@ def frenet2world(curr_s, curr_d, center_line_xlist, center_line_ylist, center_li
     return world_x, world_y, heading
 
 def generate_lateral_movement(di_0, di_1, di_2, dt_1, dt_2):
-    for dt_0 in np.arange(1, 3.5, 0.5):
-        for tt in np.arange(1, 3.5, 0.5):
+    for dt_0 in np.arange(DT_0_MIN, DT_0_MAX + DT_0_STEP, DT_0_STEP):
+        for tt in np.arange(TT_MIN, TT_MAX + TT_STEP, TT_STEP):
             lat_traj = Quintic(di_0, di_1, di_2, dt_0, dt_1, dt_2, tt)
-            figuare.show_lateral_traj(lat_traj, dt_0, tt, tt==3.0 and dt_0==3.0)
+            figuare.show_lateral_traj(lat_traj, dt_0, tt, tt==TT_MAX and dt_0==DT_0_MAX)
 
-# def generate_longitudinal_movement(si_0, si_1, si_2, st_1, st_2):
-#    pass
+def generate_longitudinal_movement(si_0, si_1, si_2, st_1, st_2):
+    for st_1 in np.arange(ST_1_MIN, ST_1_MAX + ST_1_STEP, ST_1_STEP):
+        for tt in np.arange(TT_MIN, TT_MAX + TT_STEP, TT_STEP):
+            long_traj = Quartic(si_0, si_1, si_2, st_1, st_2, tt)
+            figuare.show_longitudinal_traj(long_traj, st_1, tt, tt==TT_MAX and st_1 == ST_1_MAX)
 
 if __name__ == "__main__":
     center_line_xlist = np.linspace(10, 50, 100)
@@ -108,6 +113,7 @@ if __name__ == "__main__":
     ego_x, ego_y = 10, 10
     frenet_s, frenet_d = world2frenet(ego_x, ego_y, center_line_xlist, center_line_ylist)
     generate_lateral_movement(frenet_d, 1, 0, 0, 0)
+    generate_longitudinal_movement(frenet_s, 18, 0, 16, 0)
     world_x, world_y, heading = frenet2world(frenet_s, frenet_d, center_line_xlist, center_line_ylist, center_line_slist)
     print(f"frenet coordinate (s, d): ({frenet_s}, {frenet_d})")
     print(f"world coordinate (x, y): ({world_x}, {world_y})")
