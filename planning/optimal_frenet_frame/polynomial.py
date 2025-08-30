@@ -41,7 +41,7 @@ class Quartic:
         self.c1 = qi_1
         self.c2 = qi_2 * 0.5
 
-        self.c012 = np.array([self.c0, self.c1])
+        self.c12 = np.array([self.c1, self.c2])
 
         self.m1 = np.array([
             [1, 2 * tt],
@@ -53,7 +53,7 @@ class Quartic:
             [6 * tt, 12 * (tt ** 2)]
         ])
 
-        self.c3, self.c4 = np.linalg.inv(self.m2) @ (self.qt - (self.m1 @ self.c012))
+        self.c3, self.c4 = np.linalg.inv(self.m2) @ (self.qt - (self.m1 @ self.c12))
 
     def get_position(self, t):
         return self.c4 * (t ** 4) + self.c3 * (t ** 3) + self.c2 * (t ** 2) + self.c1 * t + self.c0
