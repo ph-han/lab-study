@@ -33,6 +33,9 @@ class Quintic:
     def get_acceleration(self, t):
         return 20 * self.c5 * (t ** 3) + 12 * self.c4 * (t ** 2) + 6 * self.c3 * t + 2 * self.c2
 
+    def get_jerk(self, t):
+        return 60*self.c5*(t**2) + 24*self.c4*t + 6*self.c3
+
 class Quartic:
     def __init__(self, qi_0, qi_1, qi_2, qt_1, qt_2, tt):
         self.qt = np.array([qt_1, qt_2])
@@ -63,6 +66,9 @@ class Quartic:
 
     def get_acceleration(self, t):
         return 12 * self.c4 * (t ** 2) + 6 * self.c3 * t + 2 * self.c2
+
+    def get_jerk(self, t):
+        return 24 * self.c4 * t + 6 * self.c3
 
 if __name__ == "__main__":
     quintic = Quintic(0, 0, 0, 3, 2, 1, 2)
