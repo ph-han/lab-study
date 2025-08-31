@@ -130,12 +130,37 @@ def generate_lateral_movement(di_0, di_1, di_2, dt_1, dt_2):
 
 
 def generate_longitudinal_movement(si_0, si_1, si_2, st_1, st_2):
+    opt_lon_cost = np.inf
+    opt_lon_traj = None
     for st_1 in np.arange(ST_1_MIN, ST_1_MAX + ST_1_STEP, ST_1_STEP):
         for tt in np.arange(TT_MIN, TT_MAX + TT_STEP, TT_STEP):
             long_traj = Quartic(si_0, si_1, si_2, st_1, st_2, tt)
 
             if SHOW_LONGITUDINAL_PLOT:
-                figuare.show_longitudinal_traj(long_traj, st_1, tt, tt==TT_MAX and st_1 == ST_1_MAX)
+                figuare.show_longitudinal_traj(long_traj, st_1, tt, not SHOW_OPT_LONGITUDINAL_PLOT and tt==TT_MAX and st_1 == ST_1_MAX)
+
+            t_list = [t for t in np.arange(0.0, tt, GEN_T_STEP)]
+            s0_list = [long_traj.get_position(t) for t in t_list]
+            s1_list = [long_traj.get_velocity(t) for t in t_list]
+            s2_list = [long_traj.get_acceleration(t) for t in t_list]
+            sj_list = [long_traj.get_jerk(t) for t in t_list]
+
+            for t in np.arange(tt, TT_MAX + GEN_T_STEP, GEN_T_STEP):
+                t_list.append(t)
+                s0_list.append(s0_list[-1])
+                s1_list.append(s1_list[-1])
+                s2_list.append(s2_list[-1])
+                sj_list.append(sj_list[-1])
+
+            v_diff = (s1_list[-1] - DESIRED_SPEED) ** 2
+            lat_cost = K_J * sum(np.power(sj_list, 2)) + K_T * 1 + K_S * v_diff
+
+            if opt_lon_cost > lat_cost:
+                opt_lon_cost = lat_cost
+                opt_lon_traj = (s1_list, t_list)
+
+    if SHOW_OPT_LONGITUDINAL_PLOT:
+        figuare.show_opt_longitudinal_traj(opt_lon_traj, SHOW_OPT_LONGITUDINAL_PLOT)
 
 def generate_frenet_trajectory():
     frenet_paths = []

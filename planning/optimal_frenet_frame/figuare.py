@@ -49,3 +49,10 @@ def show_longitudinal_traj(traj, st_1, tt, is_end):
     if is_end:
         plt.grid(True)
         plt.show()
+
+def show_opt_longitudinal_traj(opt_traj, is_show):
+    s_d_list, tlist = opt_traj
+    plt.plot(tlist, s_d_list, '-', color="#6cf483", lw=3)
+    if is_show:
+        plt.grid(True)
+        plt.show()
