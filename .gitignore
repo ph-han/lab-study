@@ -3,7 +3,7 @@ __pycache__
 *.png
 **/example*.py
 .DS_Store
-PythonRobotics
+example
 paper
 marp
 .vscode
