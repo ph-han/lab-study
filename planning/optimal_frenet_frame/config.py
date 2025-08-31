@@ -1,3 +1,6 @@
+# common config
+GEN_T_STEP = 0.05
+
 # lateral final state position config
 DT_0_MIN = 1
 DT_0_MAX = 3
@@ -12,3 +15,15 @@ ST_1_STEP = 1
 TT_MIN = 1
 TT_MAX = 3
 TT_STEP = 0.5
+
+# plot config
+SHOW_LATERAL_PLOT = True
+SHOW_OPT_LATERAL_PLOT = True
+SHOW_LONGITUDINAL_PLOT = False
+
+# cost config
+K_J = 0.1
+K_T = 0.1
+K_D = 1.0
+
+DESIRED_LAT_POS = 2

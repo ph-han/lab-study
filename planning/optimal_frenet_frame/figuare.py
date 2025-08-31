@@ -22,9 +22,17 @@ def show_lateral_traj(traj, dt_0, tt, is_end):
         tlist = tlist.tolist() + [config.TT_MAX]
         dlist.append(dt_0)
     plt.plot(tlist, dlist, '-', color="#1E6EF4")
+    plt.title("lateral trajectories")
     plt.xlabel('t [sec]')
     plt.ylabel('d [m]')
     if is_end:
+        plt.grid(True)
+        plt.show()
+
+def show_opt_lateral_traj(opt_traj, is_show):
+    dlist, tlist = opt_traj
+    plt.plot(tlist, dlist, '-', color="#6cf483", lw=3)
+    if is_show:
         plt.grid(True)
         plt.show()
 
@@ -35,8 +43,9 @@ def show_longitudinal_traj(traj, st_1, tt, is_end):
         tlist = tlist.tolist() + [config.TT_MAX]
         slist.append(st_1)
     plt.plot(tlist, slist, '-', color="#1E6EF4")
+    plt.title("longitudinal trajectories")
     plt.xlabel('t [sec]')
-    plt.ylabel('dot s [m/s]')
+    plt.ylabel(r"$\dot{s}$ m/s")
     if is_end:
         plt.grid(True)
         plt.show()

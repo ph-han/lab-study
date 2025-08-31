@@ -94,16 +94,53 @@ def frenet2world(curr_s, curr_d, center_line_xlist, center_line_ylist, center_li
     return world_x, world_y, heading
 
 def generate_lateral_movement(di_0, di_1, di_2, dt_1, dt_2):
+    opt_lat_cost = np.inf
+    opt_lat_traj = None
     for dt_0 in np.arange(DT_0_MIN, DT_0_MAX + DT_0_STEP, DT_0_STEP):
         for tt in np.arange(TT_MIN, TT_MAX + TT_STEP, TT_STEP):
             lat_traj = Quintic(di_0, di_1, di_2, dt_0, dt_1, dt_2, tt)
-            figuare.show_lateral_traj(lat_traj, dt_0, tt, tt==TT_MAX and dt_0==DT_0_MAX)
+
+            if SHOW_LATERAL_PLOT:
+                figuare.show_lateral_traj(lat_traj, dt_0, tt, not SHOW_OPT_LATERAL_PLOT and tt == TT_MAX and dt_0 == DT_0_MAX)
+
+            t_list = [t for t in np.arange(0.0, tt, GEN_T_STEP)]
+            d0_list = [lat_traj.get_position(t) for t in t_list]
+            d1_list = [lat_traj.get_velocity(t) for t in t_list]
+            d2_list = [lat_traj.get_acceleration(t) for t in t_list]
+            dj_list = [lat_traj.get_jerk(t) for t in t_list]
+
+            for t in np.arange(tt, TT_MAX + GEN_T_STEP, GEN_T_STEP):
+                t_list.append(t)
+                d0_list.append(d0_list[-1])
+                d1_list.append(d1_list[-1])
+                d2_list.append(d2_list[-1])
+                dj_list.append(dj_list[-1])
+
+            # print(f"{t}, {dt_0} : {d0_list[-1]}")
+            # print(np.sum(np.power(dj_list, 2)))
+            d_diff = (d0_list[-1] - DESIRED_LAT_POS)**2
+            lat_cost = K_J * sum(np.power(dj_list, 2)) + K_T * 1 + K_D * d_diff
+
+            if opt_lat_cost > lat_cost:
+                opt_lat_cost = lat_cost
+                opt_lat_traj = (d0_list, t_list)
+
+    if SHOW_OPT_LATERAL_PLOT:
+        figuare.show_opt_lateral_traj(opt_lat_traj, SHOW_OPT_LATERAL_PLOT)
+
 
 def generate_longitudinal_movement(si_0, si_1, si_2, st_1, st_2):
     for st_1 in np.arange(ST_1_MIN, ST_1_MAX + ST_1_STEP, ST_1_STEP):
         for tt in np.arange(TT_MIN, TT_MAX + TT_STEP, TT_STEP):
             long_traj = Quartic(si_0, si_1, si_2, st_1, st_2, tt)
-            figuare.show_longitudinal_traj(long_traj, st_1, tt, tt==TT_MAX and st_1 == ST_1_MAX)
+
+            if SHOW_LONGITUDINAL_PLOT:
+                figuare.show_longitudinal_traj(long_traj, st_1, tt, tt==TT_MAX and st_1 == ST_1_MAX)
+
+def generate_frenet_trajectory():
+    frenet_paths = []
+
+    pass
 
 if __name__ == "__main__":
     center_line_xlist = np.linspace(10, 50, 100)
@@ -117,4 +154,4 @@ if __name__ == "__main__":
     world_x, world_y, heading = frenet2world(frenet_s, frenet_d, center_line_xlist, center_line_ylist, center_line_slist)
     print(f"frenet coordinate (s, d): ({frenet_s}, {frenet_d})")
     print(f"world coordinate (x, y): ({world_x}, {world_y})")
-    figuare.show_coord_transformation((ego_x, ego_y), (world_x, world_y), (center_line_xlist, center_line_ylist))
+    # figuare.show_coord_transformation((ego_x, ego_y), (world_x, world_y), (center_line_xlist, center_line_ylist))
