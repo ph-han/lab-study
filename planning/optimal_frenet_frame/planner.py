@@ -101,7 +101,7 @@ def generate_lateral_movement(di_0, di_1, di_2, dt_1, dt_2):
             lat_traj = Quintic(di_0, di_1, di_2, dt_0, dt_1, dt_2, tt)
 
             if SHOW_LATERAL_PLOT:
-                figuare.show_lateral_traj(lat_traj, dt_0, tt, not SHOW_OPT_LATERAL_PLOT and tt == TT_MAX and dt_0 == DT_0_MAX)
+                figuare.show_lateral_traj(lat_traj, dt_0, tt)
 
             t_list = [t for t in np.arange(0.0, tt, GEN_T_STEP)]
             d0_list = [lat_traj.get_position(t) for t in t_list]
@@ -126,7 +126,7 @@ def generate_lateral_movement(di_0, di_1, di_2, dt_1, dt_2):
                 opt_lat_traj = (d0_list, t_list)
 
     if SHOW_OPT_LATERAL_PLOT:
-        figuare.show_opt_lateral_traj(opt_lat_traj, SHOW_OPT_LATERAL_PLOT)
+        figuare.show_opt_lateral_traj(opt_lat_traj)
 
 
 def generate_longitudinal_movement(si_0, si_1, si_2, st_1, st_2):
@@ -137,7 +137,7 @@ def generate_longitudinal_movement(si_0, si_1, si_2, st_1, st_2):
             long_traj = Quartic(si_0, si_1, si_2, st_1, st_2, tt)
 
             if SHOW_LONGITUDINAL_PLOT:
-                figuare.show_longitudinal_traj(long_traj, st_1, tt, not SHOW_OPT_LONGITUDINAL_PLOT and tt==TT_MAX and st_1 == ST_1_MAX)
+                figuare.show_longitudinal_traj(long_traj, st_1, tt)
 
             t_list = [t for t in np.arange(0.0, tt, GEN_T_STEP)]
             s0_list = [long_traj.get_position(t) for t in t_list]
@@ -160,7 +160,7 @@ def generate_longitudinal_movement(si_0, si_1, si_2, st_1, st_2):
                 opt_lon_traj = (s1_list, t_list)
 
     if SHOW_OPT_LONGITUDINAL_PLOT:
-        figuare.show_opt_longitudinal_traj(opt_lon_traj, SHOW_OPT_LONGITUDINAL_PLOT)
+        figuare.show_opt_longitudinal_traj(opt_lon_traj)
 
 def generate_frenet_trajectory():
     frenet_paths = []
@@ -180,3 +180,4 @@ if __name__ == "__main__":
     print(f"frenet coordinate (s, d): ({frenet_s}, {frenet_d})")
     print(f"world coordinate (x, y): ({world_x}, {world_y})")
     # figuare.show_coord_transformation((ego_x, ego_y), (world_x, world_y), (center_line_xlist, center_line_ylist))
+    figuare.show()
