@@ -27,6 +27,8 @@ K_J = 0.1
 K_T = 0.1
 K_D = 1.0
 K_S = 1.0
+K_LAT = 1.0
+K_LON = 1.3
 
 DESIRED_LAT_POS = 2
 DESIRED_SPEED = 16

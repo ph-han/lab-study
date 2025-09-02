@@ -55,7 +55,7 @@ def show_opt_longitudinal_traj(opt_traj):
 
 def show_frenet_path_in_world(xlist, ylist):
     plt.figure(4)
-    plt.plot(xlist, ylist, '-', color="#4c5364")
+    plt.plot(xlist, ylist, '-', color="#bbc5c6")
     plt.axis('equal')
     plt.grid(True)
 

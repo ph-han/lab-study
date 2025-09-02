@@ -21,3 +21,8 @@ class FrenetPath:
         self.lat_cost = 0
         self.lon_cost = 0
         self.tot_cost = 0
+
+        # world_cood
+        self.xlist = []
+        self.ylist = []
+        self.yawlist = []

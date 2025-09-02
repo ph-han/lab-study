@@ -216,6 +216,7 @@ def generate_frenet_trajectory(lat_state, lon_state, center_line_xlist, center_l
                 lon_cost = K_J * sum(np.power(lon_traj['jerk'], 2)) + K_T * 1 + K_S * v_diff
                 fp.lon_cost = lon_cost
 
+                fp.tot_cost = K_LAT * fp.lat_cost + K_LON * fp.lon_cost
                 frenet_paths.append(fp)
 
                 if opt_lat_cost > lat_cost:
@@ -239,7 +240,8 @@ def generate_frenet_trajectory(lat_state, lon_state, center_line_xlist, center_l
             x, y, _ = frenet2world(s, d, center_line_xlist, center_line_ylist, center_line_slist)
             xlist.append(x)
             ylist.append(y)
-        
+        fp.xlist = xlist
+        fp.ylist = ylist
         figuare.show_frenet_path_in_world(xlist, ylist)
 
 if __name__ == "__main__":
