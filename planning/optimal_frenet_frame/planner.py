@@ -73,7 +73,7 @@ def frenet2world(curr_s, curr_d, center_line_xlist, center_line_ylist, center_li
 
     wp = 0 if next_wp - 1 < 0 else next_wp - 1
 
-    print(f"wp: {wp}, next_wp: {next_wp}")
+    # print(f"wp: {wp}, next_wp: {next_wp}")
 
     dx = center_line_xlist[next_wp] - center_line_xlist[wp]
     dy = center_line_ylist[next_wp] - center_line_ylist[wp]
@@ -81,7 +81,7 @@ def frenet2world(curr_s, curr_d, center_line_xlist, center_line_ylist, center_li
     heading = np.arctan2(dy, dx)
 
     seg_s = curr_s - center_line_slist[wp]
-    print(f"seg_s: {seg_s}")
+    # print(f"seg_s: {seg_s}")
     seg_vec = np.array([
         center_line_xlist[wp] + seg_s * np.cos(heading),
         center_line_ylist[wp] + seg_s * np.sin(heading)
@@ -93,91 +93,165 @@ def frenet2world(curr_s, curr_d, center_line_xlist, center_line_ylist, center_li
 
     return world_x, world_y, heading
 
-def generate_lateral_movement(di_0, di_1, di_2, dt_1, dt_2):
-    opt_lat_cost = np.inf
-    opt_lat_traj = None
+def generate_lateral_movement(di_0, di_1, di_2, dt_1, dt_2, tt): # current function is for high speed movement
+    # opt_lat_cost = np.inf
+    # opt_lat_traj = None
+    trajectories = []
     for dt_0 in np.arange(DT_0_MIN, DT_0_MAX + DT_0_STEP, DT_0_STEP):
-        for tt in np.arange(TT_MIN, TT_MAX + TT_STEP, TT_STEP):
-            lat_traj = Quintic(di_0, di_1, di_2, dt_0, dt_1, dt_2, tt)
+        lat_traj = Quintic(di_0, di_1, di_2, dt_0, dt_1, dt_2, tt)
+        
+        if SHOW_LATERAL_PLOT:
+            figuare.show_lateral_traj(lat_traj, dt_0, tt)
 
-            if SHOW_LATERAL_PLOT:
-                figuare.show_lateral_traj(lat_traj, dt_0, tt)
+        t_list = [t for t in np.arange(0.0, tt, GEN_T_STEP)]
+        d0_list = [lat_traj.get_position(t) for t in t_list]
+        d1_list = [lat_traj.get_velocity(t) for t in t_list]
+        d2_list = [lat_traj.get_acceleration(t) for t in t_list]
+        dj_list = [lat_traj.get_jerk(t) for t in t_list]
 
-            t_list = [t for t in np.arange(0.0, tt, GEN_T_STEP)]
-            d0_list = [lat_traj.get_position(t) for t in t_list]
-            d1_list = [lat_traj.get_velocity(t) for t in t_list]
-            d2_list = [lat_traj.get_acceleration(t) for t in t_list]
-            dj_list = [lat_traj.get_jerk(t) for t in t_list]
+        for t in np.arange(tt, TT_MAX + GEN_T_STEP, GEN_T_STEP):
+            t_list.append(t)
+            d0_list.append(d0_list[-1])
+            d1_list.append(d1_list[-1])
+            d2_list.append(d2_list[-1])
+            dj_list.append(dj_list[-1])
+        
+        generated_traj = {
+            't': t_list,
+            'd0': d0_list,
+            'd1': d1_list,
+            'd2': d2_list,
+            'jerk': dj_list
 
-            for t in np.arange(tt, TT_MAX + GEN_T_STEP, GEN_T_STEP):
-                t_list.append(t)
-                d0_list.append(d0_list[-1])
-                d1_list.append(d1_list[-1])
-                d2_list.append(d2_list[-1])
-                dj_list.append(dj_list[-1])
+        }
+        trajectories.append(generated_traj)
+        # d_diff = (d0_list[-1] - DESIRED_LAT_POS)**2
+        # lat_cost = K_J * sum(np.power(dj_list, 2)) + K_T * 1 + K_D * d_diff
 
-            # print(f"{t}, {dt_0} : {d0_list[-1]}")
-            # print(np.sum(np.power(dj_list, 2)))
-            d_diff = (d0_list[-1] - DESIRED_LAT_POS)**2
-            lat_cost = K_J * sum(np.power(dj_list, 2)) + K_T * 1 + K_D * d_diff
+        # if opt_lat_cost > lat_cost:
+        #     opt_lat_cost = lat_cost
+        #     opt_lat_traj = (d0_list, t_list)
 
-            if opt_lat_cost > lat_cost:
-                opt_lat_cost = lat_cost
-                opt_lat_traj = (d0_list, t_list)
-
-    if SHOW_OPT_LATERAL_PLOT:
-        figuare.show_opt_lateral_traj(opt_lat_traj)
+    # if SHOW_OPT_LATERAL_PLOT:
+    #     figuare.show_opt_lateral_traj(opt_lat_traj)
+    return trajectories
 
 
-def generate_longitudinal_movement(si_0, si_1, si_2, st_1, st_2):
+def generate_longitudinal_movement(si_0, si_1, si_2, st_1, st_2, tt): # current function is for velocity keeping
+    # opt_lon_cost = np.inf
+    # opt_lon_traj = None
+    trajectories = []
+    for st_1 in np.arange(ST_1_MIN, ST_1_MAX + ST_1_STEP, ST_1_STEP):
+        long_traj = Quartic(si_0, si_1, si_2, st_1, st_2, tt)
+
+        if SHOW_LONGITUDINAL_PLOT:
+            figuare.show_longitudinal_traj(long_traj, st_1, tt)
+
+        t_list = [t for t in np.arange(0.0, tt, GEN_T_STEP)]
+        s0_list = [long_traj.get_position(t) for t in t_list]
+        s1_list = [long_traj.get_velocity(t) for t in t_list]
+        s2_list = [long_traj.get_acceleration(t) for t in t_list]
+        sj_list = [long_traj.get_jerk(t) for t in t_list]
+
+        for t in np.arange(tt, TT_MAX + GEN_T_STEP, GEN_T_STEP):
+            t_list.append(t)
+            _s = s0_list[-1] + s1_list[-1] * GEN_T_STEP
+            s0_list.append(_s)
+            s1_list.append(s1_list[-1])
+            s2_list.append(s2_list[-1])
+            sj_list.append(sj_list[-1])
+
+        generated_traj = {
+            't': t_list,
+            's0': s0_list,
+            's1': s1_list,
+            's2': s2_list,
+            'jerk': sj_list
+
+        }
+        trajectories.append(generated_traj)
+
+    #     v_diff = (s1_list[-1] - DESIRED_SPEED) ** 2
+    #     lon_cost = K_J * sum(np.power(sj_list, 2)) + K_T * 1 + K_S * v_diff
+
+    #     if opt_lon_cost > lon_cost:
+    #         opt_lon_cost = lon_cost
+    #         opt_lon_traj = (s1_list, t_list)
+
+    # if SHOW_OPT_LONGITUDINAL_PLOT:
+    #     figuare.show_opt_longitudinal_traj(opt_lon_traj)
+    return trajectories
+
+def generate_frenet_trajectory(lat_state, lon_state, center_line_xlist, center_line_ylist, center_line_slist):
+    frenet_paths = []
+
     opt_lon_cost = np.inf
     opt_lon_traj = None
-    for st_1 in np.arange(ST_1_MIN, ST_1_MAX + ST_1_STEP, ST_1_STEP):
-        for tt in np.arange(TT_MIN, TT_MAX + TT_STEP, TT_STEP):
-            long_traj = Quartic(si_0, si_1, si_2, st_1, st_2, tt)
+    opt_lat_cost = np.inf
+    opt_lat_traj = None
+    for tt in np.arange(TT_MIN, TT_MAX + TT_STEP, TT_STEP):
+        lat_traj_list = generate_lateral_movement(*lat_state, tt)
+        lon_traj_list = generate_longitudinal_movement(*lon_state, tt)
 
-            if SHOW_LONGITUDINAL_PLOT:
-                figuare.show_longitudinal_traj(long_traj, st_1, tt)
+        for lat_traj in lat_traj_list:
+            for lon_traj in lon_traj_list:
+                fp = FrenetPath()
 
-            t_list = [t for t in np.arange(0.0, tt, GEN_T_STEP)]
-            s0_list = [long_traj.get_position(t) for t in t_list]
-            s1_list = [long_traj.get_velocity(t) for t in t_list]
-            s2_list = [long_traj.get_acceleration(t) for t in t_list]
-            sj_list = [long_traj.get_jerk(t) for t in t_list]
+                fp.t = lat_traj['t']
+                fp.d0 = lat_traj['d0']
+                fp.d1 = lat_traj['d1']
+                fp.d2 = lat_traj['d2']
+                fp.dj = lat_traj['jerk']
 
-            for t in np.arange(tt, TT_MAX + GEN_T_STEP, GEN_T_STEP):
-                t_list.append(t)
-                s0_list.append(s0_list[-1])
-                s1_list.append(s1_list[-1])
-                s2_list.append(s2_list[-1])
-                sj_list.append(sj_list[-1])
+                fp.s0 = lon_traj['s0']
+                fp.s1 = lon_traj['s1']
+                fp.s2 = lon_traj['s2']
+                fp.sj = lon_traj['jerk']
 
-            v_diff = (s1_list[-1] - DESIRED_SPEED) ** 2
-            lat_cost = K_J * sum(np.power(sj_list, 2)) + K_T * 1 + K_S * v_diff
+                d_diff = (lat_traj['d0'][-1] - DESIRED_LAT_POS)**2
+                lat_cost = K_J * sum(np.power(lat_traj['jerk'], 2)) + K_T * 1 + K_D * d_diff
+                fp.lat_cost = lat_cost
 
-            if opt_lon_cost > lat_cost:
-                opt_lon_cost = lat_cost
-                opt_lon_traj = (s1_list, t_list)
+                v_diff = (lon_traj['s1'][-1] - DESIRED_SPEED) ** 2
+                lon_cost = K_J * sum(np.power(lon_traj['jerk'], 2)) + K_T * 1 + K_S * v_diff
+                fp.lon_cost = lon_cost
+
+                frenet_paths.append(fp)
+
+                if opt_lat_cost > lat_cost:
+                    opt_lat_cost = lat_cost
+                    opt_lat_traj = (lat_traj['d0'], lat_traj['t'])
+
+                if opt_lon_cost > lon_cost:
+                    opt_lon_cost = lon_cost
+                    opt_lon_traj = (lon_traj['s1'], lat_traj['t'])
+    
+    if SHOW_OPT_LATERAL_PLOT:
+        figuare.show_opt_lateral_traj(opt_lat_traj)
 
     if SHOW_OPT_LONGITUDINAL_PLOT:
         figuare.show_opt_longitudinal_traj(opt_lon_traj)
 
-def generate_frenet_trajectory():
-    frenet_paths = []
-
-    pass
+    for fp in frenet_paths:
+        xlist = []
+        ylist = []
+        for s, d in zip(fp.s0, fp.d0):
+            x, y, _ = frenet2world(s, d, center_line_xlist, center_line_ylist, center_line_slist)
+            xlist.append(x)
+            ylist.append(y)
+        
+        figuare.show_frenet_path_in_world(xlist, ylist)
 
 if __name__ == "__main__":
-    center_line_xlist = np.linspace(10, 50, 100)
+    center_line_xlist = np.linspace(10, 30, 100)
     center_line_ylist = 0.1 * (center_line_xlist**2)
     center_line_slist = [world2frenet(rx, ry, center_line_xlist, center_line_ylist)[0] for (rx, ry) in list(zip(center_line_xlist, center_line_ylist))]
 
     ego_x, ego_y = 10, 10
     frenet_s, frenet_d = world2frenet(ego_x, ego_y, center_line_xlist, center_line_ylist)
-    generate_lateral_movement(frenet_d, 1, 0, 0, 0)
-    generate_longitudinal_movement(frenet_s, 18, 0, 16, 0)
+    generate_frenet_trajectory((frenet_d, 1, 0, 0, 0), (frenet_s, 18, 0, 16, 0), center_line_xlist, center_line_ylist, center_line_slist)
     world_x, world_y, heading = frenet2world(frenet_s, frenet_d, center_line_xlist, center_line_ylist, center_line_slist)
     print(f"frenet coordinate (s, d): ({frenet_s}, {frenet_d})")
     print(f"world coordinate (x, y): ({world_x}, {world_y})")
-    # figuare.show_coord_transformation((ego_x, ego_y), (world_x, world_y), (center_line_xlist, center_line_ylist))
+    figuare.show_coord_transformation((ego_x, ego_y), (world_x, world_y), (center_line_xlist, center_line_ylist))
     figuare.show()
