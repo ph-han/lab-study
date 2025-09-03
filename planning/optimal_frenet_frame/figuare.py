@@ -65,5 +65,10 @@ def show_frenet_valid_path_in_world(xlist, ylist):
     plt.axis('equal')
     plt.grid(True)
 
+def show_opt_traj(opt_traj):
+    plt.figure(4)
+    plt.plot(opt_traj.xlist, opt_traj.ylist, '-', color="#6cf483")
+    plt.grid(True)
+
 def show():
     plt.show()

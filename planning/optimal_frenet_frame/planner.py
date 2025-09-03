@@ -256,6 +256,11 @@ def check_valid_path(paths, obs, center_line_xlist, center_line_ylist, center_li
         figuare.show_frenet_valid_path_in_world(path.xlist, path.ylist)
     return valid_paths
 
+def generate_opt_path(valid_paths):
+    opt_path = min(valid_paths, key=lambda p: p.tot_cost)
+    figuare.show_opt_traj(opt_path)
+    return opt_path
+
 
 if __name__ == "__main__":
     center_line_xlist = np.linspace(10, 30, 100)
@@ -266,7 +271,8 @@ if __name__ == "__main__":
     frenet_s, frenet_d = world2frenet(ego_x, ego_y, center_line_xlist, center_line_ylist)
     fplist = generate_frenet_trajectory((frenet_d, 1, 0, 0, 0), (frenet_s, 18, 0, 16, 0))
     fplist = frenet_paths_to_world(fplist, center_line_xlist, center_line_ylist, center_line_slist)
-    check_valid_path(fplist, None, center_line_xlist, center_line_ylist, center_line_slist)
+    valid_paths = check_valid_path(fplist, None, center_line_xlist, center_line_ylist, center_line_slist)
+    generate_opt_path(valid_paths)
     world_x, world_y, _ = frenet2world(frenet_s, frenet_d, center_line_xlist, center_line_ylist, center_line_slist)
     print(f"frenet coordinate (s, d): ({frenet_s}, {frenet_d})")
     print(f"world coordinate (x, y): ({world_x}, {world_y})")
