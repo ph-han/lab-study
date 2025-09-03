@@ -26,3 +26,5 @@ class FrenetPath:
         self.xlist = []
         self.ylist = []
         self.yawlist = []
+        self.ds = []
+        self.kappa = []

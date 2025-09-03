@@ -94,8 +94,6 @@ def frenet2world(curr_s, curr_d, center_line_xlist, center_line_ylist, center_li
     return world_x, world_y, heading
 
 def generate_lateral_movement(di_0, di_1, di_2, dt_1, dt_2, tt): # current function is for high speed movement
-    # opt_lat_cost = np.inf
-    # opt_lat_traj = None
     trajectories = []
     for dt_0 in np.arange(DT_0_MIN, DT_0_MAX + DT_0_STEP, DT_0_STEP):
         lat_traj = Quintic(di_0, di_1, di_2, dt_0, dt_1, dt_2, tt)
@@ -125,21 +123,11 @@ def generate_lateral_movement(di_0, di_1, di_2, dt_1, dt_2, tt): # current funct
 
         }
         trajectories.append(generated_traj)
-        # d_diff = (d0_list[-1] - DESIRED_LAT_POS)**2
-        # lat_cost = K_J * sum(np.power(dj_list, 2)) + K_T * 1 + K_D * d_diff
-
-        # if opt_lat_cost > lat_cost:
-        #     opt_lat_cost = lat_cost
-        #     opt_lat_traj = (d0_list, t_list)
-
-    # if SHOW_OPT_LATERAL_PLOT:
-    #     figuare.show_opt_lateral_traj(opt_lat_traj)
     return trajectories
 
 
 def generate_longitudinal_movement(si_0, si_1, si_2, st_1, st_2, tt): # current function is for velocity keeping
-    # opt_lon_cost = np.inf
-    # opt_lon_traj = None
+
     trajectories = []
     for st_1 in np.arange(ST_1_MIN, ST_1_MAX + ST_1_STEP, ST_1_STEP):
         long_traj = Quartic(si_0, si_1, si_2, st_1, st_2, tt)
@@ -170,19 +158,9 @@ def generate_longitudinal_movement(si_0, si_1, si_2, st_1, st_2, tt): # current 
 
         }
         trajectories.append(generated_traj)
-
-    #     v_diff = (s1_list[-1] - DESIRED_SPEED) ** 2
-    #     lon_cost = K_J * sum(np.power(sj_list, 2)) + K_T * 1 + K_S * v_diff
-
-    #     if opt_lon_cost > lon_cost:
-    #         opt_lon_cost = lon_cost
-    #         opt_lon_traj = (s1_list, t_list)
-
-    # if SHOW_OPT_LONGITUDINAL_PLOT:
-    #     figuare.show_opt_longitudinal_traj(opt_lon_traj)
     return trajectories
 
-def generate_frenet_trajectory(lat_state, lon_state, center_line_xlist, center_line_ylist, center_line_slist):
+def generate_frenet_trajectory(lat_state, lon_state):
     frenet_paths = []
 
     opt_lon_cost = np.inf
@@ -233,16 +211,51 @@ def generate_frenet_trajectory(lat_state, lon_state, center_line_xlist, center_l
     if SHOW_OPT_LONGITUDINAL_PLOT:
         figuare.show_opt_longitudinal_traj(opt_lon_traj)
 
+    return frenet_paths
+
+def frenet_paths_to_world(frenet_paths, center_line_xlist, center_line_ylist, center_line_slist):
     for fp in frenet_paths:
-        xlist = []
-        ylist = []
         for s, d in zip(fp.s0, fp.d0):
             x, y, _ = frenet2world(s, d, center_line_xlist, center_line_ylist, center_line_slist)
-            xlist.append(x)
-            ylist.append(y)
-        fp.xlist = xlist
-        fp.ylist = ylist
-        figuare.show_frenet_path_in_world(xlist, ylist)
+            fp.xlist.append(x)
+            fp.ylist.append(y)
+
+        for i in range(len(fp.xlist) - 1):
+            dx = fp.xlist[i + 1] - fp.xlist[i]
+            dy = fp.ylist[i + 1] - fp.ylist[i]
+            fp.yawlist.append(np.arctan2(dy, dx))
+            fp.ds.append(np.hypot(dx, dy))
+
+        fp.yawlist.append(fp.yawlist[-1])
+        fp.ds.append(fp.ds[-1])
+
+        for i in range(len(fp.yawlist) - 1):
+            yaw_diff = fp.yawlist[i + 1] - fp.yawlist[i]
+            yaw_diff = np.arctan2(np.sin(yaw_diff), np.cos(yaw_diff))
+            fp.kappa.append(yaw_diff / fp.ds[i])
+
+        figuare.show_frenet_path_in_world(fp.xlist, fp.ylist)
+    
+    return frenet_paths
+
+def check_valid_path(paths, obs, center_line_xlist, center_line_ylist, center_line_slist):
+    valid_paths = []
+    for path in paths:
+        acc_squared = [(abs(a_s**2 + a_d**2)) for (a_s, a_d) in zip(path.s2, path.d2)]
+        if any([v > V_MAX for v in path.s1]):
+            continue
+        elif any([acc > ACC_MAX**2 for acc in acc_squared]):
+            continue
+        elif any([abs(kappa) > K_MAX for kappa in path.kappa]):
+            continue
+        # elif collision_check():
+        #     continue
+        
+        valid_paths.append(path)
+    for path in valid_paths:
+        figuare.show_frenet_valid_path_in_world(path.xlist, path.ylist)
+    return valid_paths
+
 
 if __name__ == "__main__":
     center_line_xlist = np.linspace(10, 30, 100)
@@ -251,8 +264,10 @@ if __name__ == "__main__":
 
     ego_x, ego_y = 10, 10
     frenet_s, frenet_d = world2frenet(ego_x, ego_y, center_line_xlist, center_line_ylist)
-    generate_frenet_trajectory((frenet_d, 1, 0, 0, 0), (frenet_s, 18, 0, 16, 0), center_line_xlist, center_line_ylist, center_line_slist)
-    world_x, world_y, heading = frenet2world(frenet_s, frenet_d, center_line_xlist, center_line_ylist, center_line_slist)
+    fplist = generate_frenet_trajectory((frenet_d, 1, 0, 0, 0), (frenet_s, 18, 0, 16, 0))
+    fplist = frenet_paths_to_world(fplist, center_line_xlist, center_line_ylist, center_line_slist)
+    check_valid_path(fplist, None, center_line_xlist, center_line_ylist, center_line_slist)
+    world_x, world_y, _ = frenet2world(frenet_s, frenet_d, center_line_xlist, center_line_ylist, center_line_slist)
     print(f"frenet coordinate (s, d): ({frenet_s}, {frenet_d})")
     print(f"world coordinate (x, y): ({world_x}, {world_y})")
     figuare.show_coord_transformation((ego_x, ego_y), (world_x, world_y), (center_line_xlist, center_line_ylist))

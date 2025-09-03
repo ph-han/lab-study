@@ -59,5 +59,11 @@ def show_frenet_path_in_world(xlist, ylist):
     plt.axis('equal')
     plt.grid(True)
 
+def show_frenet_valid_path_in_world(xlist, ylist):
+    plt.figure(4)
+    plt.plot(xlist, ylist, '-', color="#1E6EF4")
+    plt.axis('equal')
+    plt.grid(True)
+
 def show():
     plt.show()
