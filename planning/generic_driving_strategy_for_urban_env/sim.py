@@ -173,8 +173,7 @@ class UrbanSimulator:
         self._update_ego_position(frame)
         self._update_npcs(sec)
         self._handle_static_events(sec)
-        if frame % 50 == 0:
-            self._update_events(frame // 50)
+        self._update_events(frame)
         self._update_plot_view(frame, sec)
 
     def _draw_background(self):
@@ -192,24 +191,24 @@ class UrbanSimulator:
                      va='top')
         self.ego.draw(self.ax1)
 
-    def _update_events(self, sec):
+    def _update_events(self, frame):
         _updated_events = self.events.copy()
 
         for key, obs in self.events.items():
             if key == 'none' or not obs:
                 continue
             # print(obs)
-            if obs['end_t'] <= 0:
+            if obs['end_t'] < 0:
                 del _updated_events[key]
                 continue
-            if obs['begin_distance'] < self.ego.x + Car.FRONT_OVERHANG + Car.WHEEL_BASE:
+            if self.c_events[key]['begin_distance'] < self.ego.x + Car.FRONT_OVERHANG + Car.WHEEL_BASE:
                 del _updated_events[key]
+                print("del")
                 continue
 
             _updated_event = obs.copy()
-            # if self.c_events[key]['start_t'] <= sec:
-            _updated_event['start_t'] = max(self.c_events[key]['start_t'] - sec, 0) 
-            _updated_event['end_t'] = max(self.c_events[key]['end_t'] - sec, 0) 
+            _updated_event['start_t'] = max(self.c_events[key]['start_t'] - frame / 50, 0) 
+            _updated_event['end_t'] = max(self.c_events[key]['end_t'] - frame / 50, 0) 
             _updated_event['begin_distance'] = max(self.c_events[key]['begin_distance'] - (self.ego.x + Car.FRONT_OVERHANG + Car.WHEEL_BASE), 0)
             _updated_events[key] = _updated_event
 
@@ -219,13 +218,10 @@ class UrbanSimulator:
         for i, (npc_info, npc_idm) in enumerate(zip(self.npcs, self.npc_idms)):
             if not npc_idm or not (npc_info[1] in self.events):
                 continue
-
-            if sec <= npc_idm[2] :
-                leader = None
-                if i < len(self.npc_idms) - 1 and sec < self.npc_idms[i + 1][1]:
-                    leader = self.npc_idms[i + 1][0]
-
-                # if npc_idm[1] <= sec - 1:
+            leader = None
+            if i < len(self.npc_idms) - 1 and sec < self.npc_idms[i + 1][1]:
+                leader = self.npc_idms[i + 1][0]
+            if npc_idm[1] <= sec <= npc_idm[2] :
                 npc_idm[0].update_acceleration(leader=leader)
                 npc_idm[0].update_state(dt=0.02)
                 # diff = self.events[npc_info[1]]['end_t'] - self.events[npc_info[1]]['start_t']
@@ -233,9 +229,9 @@ class UrbanSimulator:
                 # if vs != self.events[npc_info[1]]['vs']:
                 #     self.events[npc_info[1]]['start_t'] = int(sec)
                 #     self.events[npc_info[1]]['vs'] = vs
-                npc_info[0].x = npc_idm[0].x - Car.FRONT_OVERHANG - Car.WHEEL_BASE
-                self.ax1.text(npc_info[0].x + Car.WHEEL_BASE // 2, npc_info[0].y + npc_info[0].OVERALL_WIDTH + 2, f'npc_{i} | {npc_idm[0].v:.2f}m/s', ha='center', va='top')
-                npc_info[0].draw(self.ax1)
+            npc_info[0].x = npc_idm[0].x - Car.FRONT_OVERHANG - Car.WHEEL_BASE
+            self.ax1.text(npc_info[0].x + Car.WHEEL_BASE // 2, npc_info[0].y + npc_info[0].OVERALL_WIDTH + 2, f'npc_{i} | {npc_idm[0].v:.2f}m/s', ha='center', va='top')
+            npc_info[0].draw(self.ax1)
 
     def _handle_static_events(self, sec):
         for event in self.c_events.values():
@@ -275,7 +271,7 @@ class UrbanSimulator:
     def _update_plot_view(self, frame, sec):
         self.ax1.set_aspect('equal')
         self.ax1.set_title(f'{sec:.1f}s | ego : {self.ego.x + Car.FRONT_OVERHANG + Car.WHEEL_BASE:.2f} m, {self.path[1][frame]:.2f} m/s')
-        self.ax1.set_xlim(-7 + self.ego.x, 50 + self.ego.x)
+        self.ax1.set_xlim(-7 + self.ego.x, 60 + self.ego.x)
         self.ax1.set_ylim(-10, 10)
 
 def simulation(ego, npcs, events):
