@@ -52,6 +52,9 @@ def distance_time(axes, events):
     axes.set_xlabel("distance [m]")
     # axes.yticks(np.arange(0, 31, 5))
     axes.set_ylabel("time [s]")
+    axes.set_aspect("equal", adjustable="box")
+    axes.set_xlim(0, 60)
+    axes.set_ylim(0, 25)
     axes.grid(True)
 
 def display_traffic_light(ax, event, road_y_bottom):
@@ -78,6 +81,7 @@ class UrbanSimulator:
         self.ego = ego
         self.npcs = npcs
         self.events = events
+        self.c_events = events
         
         self.road_y_top = 2
         self.road_y_bottom = -2
@@ -133,12 +137,24 @@ class UrbanSimulator:
         return [upsample_s, upsample_v, upsample_t]
 
     def _update_path(self, frame):
-        curr_state = (self.path[0][frame], self.path[1][frame], frame // 50)
-        print("curr frame: ", frame, len(self.path[1]))
-        new_rs, new_rv, new_rt = planning(curr_state, self.events, (frame // 50) + 13)
+        # curr_state = (self.path[0][frame], self.path[1][frame], frame // 50)
+        curr_state = (0, self.path[1][frame], 0)
+        # print("curr frame: ", frame, len(self.path[1]))
+        new_events = self.events.copy()
+        for key, event in self.events.items():
+            if self.events[key] and self.events[key]['start_t'] == self.events[key]['end_t']:
+                del new_events[key]
+        if len(new_events) == 0:
+            new_events = {'none': None}
+        self.events = new_events
+        new_rs, new_rv, new_rt = planning(curr_state, self.events, 13)
+        
         self.ax0.clear()
         distance_time(self.ax0, self.events)
-        self.ax0.plot(new_rs, new_rt, '-ob')
+        draw_rs = np.array(new_rs)
+        draw_rt = np.array(new_rt)
+        self.ax0.plot(draw_rs, draw_rt, '-ob')
+        
         new_rs, new_rv, new_rt = self.upsample_data([new_rs, new_rv, new_rt], 20)
         self.path[0] = self.path[0][:frame + 1] + new_rs
         self.path[1] = self.path[1][:frame + 1] + new_rv
@@ -157,6 +173,8 @@ class UrbanSimulator:
         self._update_ego_position(frame)
         self._update_npcs(sec)
         self._handle_static_events(sec)
+        if frame % 50 == 0:
+            self._update_events(frame // 50)
         self._update_plot_view(frame, sec)
 
     def _draw_background(self):
@@ -165,36 +183,62 @@ class UrbanSimulator:
         self.ax1.plot([-10, 1000], [self.road_y_bottom, self.road_y_bottom], 'k')
 
     def _update_ego_position(self, frame):
-        new_x = self.path[0][frame]
+        if self.ego.x == 0:
+            new_x = self.path[0][frame]
+        else:
+            new_x = max(self.ego.x + Car.FRONT_OVERHANG + Car.WHEEL_BASE, 0) + self.path[0][frame]
         self.ego.x = new_x - Car.FRONT_OVERHANG - Car.WHEEL_BASE
         self.ax1.text(self.ego.x + Car.WHEEL_BASE // 2, self.ego.y + Car.OVERALL_WIDTH + 2, f'ego0', ha='center',
                      va='top')
         self.ego.draw(self.ax1)
 
-    def _update_npcs(self, sec):
-        for i, (npc_info, npc_idm) in enumerate(zip(self.npcs, self.npc_idms)):
-            if not npc_idm:
+    def _update_events(self, sec):
+        _updated_events = self.events.copy()
+
+        for key, obs in self.events.items():
+            if key == 'none' or not obs:
+                continue
+            # print(obs)
+            if obs['end_t'] <= 0:
+                del _updated_events[key]
+                continue
+            if obs['begin_distance'] < self.ego.x + Car.FRONT_OVERHANG + Car.WHEEL_BASE:
+                del _updated_events[key]
                 continue
 
-            if sec < npc_idm[2] :
+            _updated_event = obs.copy()
+            # if self.c_events[key]['start_t'] <= sec:
+            _updated_event['start_t'] = max(self.c_events[key]['start_t'] - sec, 0) 
+            _updated_event['end_t'] = max(self.c_events[key]['end_t'] - sec, 0) 
+            _updated_event['begin_distance'] = max(self.c_events[key]['begin_distance'] - (self.ego.x + Car.FRONT_OVERHANG + Car.WHEEL_BASE), 0)
+            _updated_events[key] = _updated_event
+
+        self.events = _updated_events
+
+    def _update_npcs(self, sec):
+        for i, (npc_info, npc_idm) in enumerate(zip(self.npcs, self.npc_idms)):
+            if not npc_idm or not (npc_info[1] in self.events):
+                continue
+
+            if sec <= npc_idm[2] :
                 leader = None
                 if i < len(self.npc_idms) - 1 and sec < self.npc_idms[i + 1][1]:
                     leader = self.npc_idms[i + 1][0]
 
-                if npc_idm[1] <= sec - 1:
-                    npc_idm[0].update_acceleration(leader=leader)
-                    npc_idm[0].update_state(dt=0.02)
-                    diff = self.events[npc_info[1]]['end_t'] - self.events[npc_info[1]]['start_t']
-                    vs = npc_idm[0].v * diff
-                    if vs != self.events[npc_info[1]]['vs']:
-                        self.events[npc_info[1]]['start_t'] = int(sec)
-                        self.events[npc_info[1]]['vs'] = vs
-                    npc_info[0].x = npc_idm[0].x - Car.FRONT_OVERHANG - Car.WHEEL_BASE
-                    self.ax1.text(npc_info[0].x + Car.WHEEL_BASE // 2, npc_info[0].y + npc_info[0].OVERALL_WIDTH + 2, f'npc_{i} | {npc_idm[0].v:.2f}m/s', ha='center', va='top')
-                    npc_info[0].draw(self.ax1)
+                # if npc_idm[1] <= sec - 1:
+                npc_idm[0].update_acceleration(leader=leader)
+                npc_idm[0].update_state(dt=0.02)
+                # diff = self.events[npc_info[1]]['end_t'] - self.events[npc_info[1]]['start_t']
+                # vs = npc_idm[0].v * diff
+                # if vs != self.events[npc_info[1]]['vs']:
+                #     self.events[npc_info[1]]['start_t'] = int(sec)
+                #     self.events[npc_info[1]]['vs'] = vs
+                npc_info[0].x = npc_idm[0].x - Car.FRONT_OVERHANG - Car.WHEEL_BASE
+                self.ax1.text(npc_info[0].x + Car.WHEEL_BASE // 2, npc_info[0].y + npc_info[0].OVERALL_WIDTH + 2, f'npc_{i} | {npc_idm[0].v:.2f}m/s', ha='center', va='top')
+                npc_info[0].draw(self.ax1)
 
     def _handle_static_events(self, sec):
-        for event in self.events.values():
+        for event in self.c_events.values():
             if event and event.get('type') == 'static':
                 traffic_light_lights = []
                 self._handle_static_event(sec, event, traffic_light_lights)
@@ -230,13 +274,13 @@ class UrbanSimulator:
 
     def _update_plot_view(self, frame, sec):
         self.ax1.set_aspect('equal')
-        self.ax1.set_title(f'{sec:.1f}s | ego : {self.path[0][frame]:.2f} m, {self.path[1][frame]:.2f} m/s')
-        self.ax1.set_xlim(-7 + self.path[0][frame], 50 + self.path[0][frame])
+        self.ax1.set_title(f'{sec:.1f}s | ego : {self.ego.x + Car.FRONT_OVERHANG + Car.WHEEL_BASE:.2f} m, {self.path[1][frame]:.2f} m/s')
+        self.ax1.set_xlim(-7 + self.ego.x, 50 + self.ego.x)
         self.ax1.set_ylim(-10, 10)
 
 def simulation(ego, npcs, events):
     # path = planning([0, 0, 0], events, 30)
-    fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
     #
     # distance_time(axes[0], events)
     # axes[0].plot(path[0], path[2], '-ob')

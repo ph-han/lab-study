@@ -206,6 +206,8 @@ def get_result_path(closed, g_node):
     return rs[::-1], rv[::-1], rt[::-1]
 
 def planning(start_state, events, horizen=13):
+    for key, value in events.items():
+        print(f"{key}: {value}")
     w = 0.0
     s, v, t = start_state
     s_node = Node(s, v, t)
