@@ -146,9 +146,12 @@ def frenet_paths_to_world(frenet_paths, center_line_xlist, center_line_ylist, ce
         for i in range(len(fp.yawlist) - 1):
             yaw_diff = fp.yawlist[i + 1] - fp.yawlist[i]
             yaw_diff = np.arctan2(np.sin(yaw_diff), np.cos(yaw_diff))
-            fp.kappa.append(yaw_diff / fp.ds[i])
+            if fp.ds[i] > 1e-6:
+                fp.kappa.append(yaw_diff / fp.ds[i])
+            else:
+                fp.kappa.append(0.0)
 
-        figuare.show_frenet_path_in_world(fp.xlist, fp.ylist)
+        # figuare.show_frenet_path_in_world(fp.xlist, fp.ylist)
     
     return frenet_paths
 
@@ -166,13 +169,15 @@ def check_valid_path(paths, obs, center_line_xlist, center_line_ylist, center_li
         #     continue
         
         valid_paths.append(path)
-    for path in valid_paths:
-        figuare.show_frenet_valid_path_in_world(path.xlist, path.ylist)
+    # for path in valid_paths:
+    #     figuare.show_frenet_valid_path_in_world(path.xlist, path.ylist)
     return valid_paths
 
 def generate_opt_path(valid_paths):
+    if not valid_paths:
+        return []
     opt_path = min(valid_paths, key=lambda p: p.tot_cost)
-    figuare.show_opt_traj(opt_path)
+    # figuare.show_opt_traj(opt_path)
     return opt_path
 
 
@@ -191,10 +196,10 @@ if __name__ == "__main__":
     world_x, world_y, _ = frenet2world(frenet_s, frenet_d, center_line_xlist, center_line_ylist, center_line_slist)
     print(f"frenet coordinate (s, d): ({frenet_s}, {frenet_d})")
     print(f"world coordinate (x, y): ({world_x}, {world_y})")
-    figuare.show_coord_transformation((ego_x, ego_y), (world_x, world_y), (center_line_xlist, center_line_ylist))
+    # figuare.show_coord_transformation((ego_x, ego_y), (world_x, world_y), (center_line_xlist, center_line_ylist))
     fplist = generate_frenet_trajectory((frenet_d, 1, 0, 0, 0), (frenet_s, 18, 0, 16, 0))
     fplist = frenet_paths_to_world(fplist, center_line_xlist, center_line_ylist, center_line_slist)
     valid_paths = check_valid_path(fplist, None, center_line_xlist, center_line_ylist, center_line_slist)
     generate_opt_path(valid_paths)
     
-    figuare.show()
+    # figuare.show()

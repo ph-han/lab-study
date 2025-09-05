@@ -71,28 +71,50 @@ class Simulator:
         ax.plot(opt_path.xlist, opt_path.ylist, '-', color="#6cf483")
 
     def move_car(self, ax, opt_path):
-        plot_road(ax, road, lane_num=3)
         for x, y, yaw in zip(opt_path.xlist, opt_path.ylist, opt_path.yawlist):
-            ego.x, ego.y, ego.yaw = x, y, yaw
-            ego.draw(ax)
+            ax.clear()
+            self.ego.x, self.ego.y, self.ego.yaw = x, y, yaw
+            self.ego.draw(ax)
+            ax.plot(opt_path.xlist, opt_path.ylist, '-', color="#6cf483")
+            plot_road(ax, road, lane_num=3)
             
             plt.pause(0.01)
 
     def simple_example(self, ax):
-        frenet_s, frenet_d = world2frenet(ego.x, ego.y, self.center_line_xlist, self.center_line_ylist)
-        print(f"{frenet_s}, {frenet_d}")
-        fplist = planner.generate_frenet_trajectory((frenet_d, 1, 0, 0, 0), (frenet_s, 6, 0, 0, 0))
-        fplist = planner.frenet_paths_to_world(fplist, self.center_line_xlist, self.center_line_ylist, self.center_line_slist)
-        valid_paths = planner.check_valid_path(fplist, self.obs, self.center_line_xlist, self.center_line_ylist, self.center_line_slist)
-        opt_path = planner.generate_opt_path(valid_paths)
-        self.draw_valid_paths_and_opt_path(ax, valid_paths, opt_path)
-        self.move_car(ax, opt_path)
+        s0, d0 = world2frenet(self.ego.x, self.ego.y, self.center_line_xlist, self.center_line_ylist)
+        s1, s2, d1, d2 = 0, 0, 0, 0
+        for i in range(500):
+            fplist = planner.generate_frenet_trajectory((d0, d1, d2, 0, 0), (s0, s1, s2, 0, 0))
+            fplist = planner.frenet_paths_to_world(fplist, self.center_line_xlist, self.center_line_ylist, self.center_line_slist)
+            valid_paths = planner.check_valid_path(fplist, self.obs, self.center_line_xlist, self.center_line_ylist, self.center_line_slist)
+            opt_path = planner.generate_opt_path(valid_paths)
+            if not opt_path:
+                print(f"{i} step error no path!")
+                break
+            s0 = opt_path.s0[1]
+            s1 = opt_path.s1[1]
+            s2 = opt_path.s2[1]
+            d0 = opt_path.d0[1]
+            # print(opt_path.d0)
+            d1 = opt_path.d1[1]
+            d2 = opt_path.d2[1]
+            opt_d = opt_path.d0[1]
+            # print(s0, s1, s2, d0, d1, d2)
+            # self.draw_valid_paths_and_opt_path(ax, valid_paths, opt_path)
+            # self.move_car(ax, opt_path)
+            ax.clear()
+            self.ego.x, self.ego.y, self.ego.yaw = opt_path.xlist[0], opt_path.ylist[0], opt_path.yawlist[0]
+            self.ego.draw(ax)
+            ax.plot(opt_path.xlist, opt_path.ylist, '-', color="#6cf483")
+            plot_road(ax, road, lane_num=3)
+
+            plt.pause(0.1)
         # ego.draw(ax)
         
 
 if __name__ == "__main__":
     ego = Car(0, 3.5, 0)
-    road = generate_road(lane_num=3, lane_width=3.5, road_length=100, curved=False)
+    road = generate_road(lane_num=3, lane_width=3.5, road_length=100, curved=True)
     fig, ax = plt.subplots(figsize=(10,6))
     sim = Simulator(None, road, ego)
     sim.simple_example(ax)
