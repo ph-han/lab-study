@@ -3,95 +3,9 @@ import matplotlib.pyplot as plt
 
 import figuare
 from config import *
+from frenet import *
 from frenet_path import FrenetPath
 from polynomial import Quartic, Quintic
-
-
-def find_closest_waypoint(curr_x, curr_y, center_line_xlist, center_line_ylist):
-    xlist = np.array(center_line_xlist)
-    ylist = np.array(center_line_ylist)
-
-    distance_list = np.hypot(xlist - curr_x, ylist - curr_y)
-    closest_wp = np.argmin(distance_list)
-    return closest_wp
-
-def get_next_waypoint(curr_x, curr_y, center_line_xlist, center_line_ylist):
-    closest_wp = find_closest_waypoint(curr_x, curr_y, center_line_xlist, center_line_ylist)
-
-    # loop until the next waypoint is ahead
-    while True:
-        if closest_wp == len(center_line_xlist) - 1:
-            break
-        traj_vec = np.array([center_line_xlist[closest_wp + 1] - center_line_xlist[closest_wp],
-                            center_line_ylist[closest_wp + 1] - center_line_ylist[closest_wp]])
-        ego_vec = np.array([curr_x - center_line_xlist[closest_wp], curr_y - center_line_ylist[closest_wp]])
-
-        # check if waypoint is ahead of ego vehicle.
-        is_waypoint_ahead = np.sign(np.dot(ego_vec, traj_vec)) 
-        if is_waypoint_ahead < 0:
-            break
-
-        closest_wp += 1
-
-    return closest_wp
-
-def world2frenet(curr_x, curr_y, center_line_xlist, center_line_ylist):
-    next_wp = get_next_waypoint(curr_x, curr_y, center_line_xlist, center_line_ylist)
-    prev_wp = next_wp - 1
-
-
-    ego_vec = np.array([
-        curr_x - center_line_xlist[prev_wp], 
-        curr_y - center_line_ylist[prev_wp]
-    ])
-    traj_vec = np.array([
-        center_line_xlist[next_wp] - center_line_xlist[prev_wp],
-        center_line_ylist[next_wp] - center_line_ylist[prev_wp]
-    ])
-
-    ego_proj_vec = ((ego_vec @ traj_vec) / (traj_vec @ traj_vec)) * traj_vec
-    frenet_d_sign = np.sign(traj_vec[0] * ego_vec[1] - traj_vec[1] * ego_vec[0])    
-
-    frenet_d = frenet_d_sign * np.hypot(ego_proj_vec[0] - ego_vec[0], ego_proj_vec[1] - ego_vec[1])
-
-    frenet_s = 0
-    for i in range(prev_wp):
-        frenet_s += np.hypot(
-            center_line_xlist[i + 1] - center_line_xlist[i],
-            center_line_ylist[i + 1] - center_line_ylist[i]
-        )
-
-    frenet_s += np.hypot(ego_proj_vec[0], ego_proj_vec[1])
-
-    return frenet_s, frenet_d
-
-def frenet2world(curr_s, curr_d, center_line_xlist, center_line_ylist, center_line_slist):
-    next_wp = 0
-
-    while curr_s > center_line_slist[next_wp] and next_wp + 1 < len(center_line_slist):
-        next_wp += 1
-
-    wp = 0 if next_wp - 1 < 0 else next_wp - 1
-
-    # print(f"wp: {wp}, next_wp: {next_wp}")
-
-    dx = center_line_xlist[next_wp] - center_line_xlist[wp]
-    dy = center_line_ylist[next_wp] - center_line_ylist[wp]
-
-    heading = np.arctan2(dy, dx)
-
-    seg_s = curr_s - center_line_slist[wp]
-    # print(f"seg_s: {seg_s}")
-    seg_vec = np.array([
-        center_line_xlist[wp] + seg_s * np.cos(heading),
-        center_line_ylist[wp] + seg_s * np.sin(heading)
-        ])
-
-    vertical_heading = heading + (np.pi / 2)
-    world_x = seg_vec[0] + curr_d * np.cos(vertical_heading)
-    world_y = seg_vec[1] + curr_d * np.sin(vertical_heading)
-
-    return world_x, world_y, heading
 
 def generate_lateral_movement(di_0, di_1, di_2, dt_1, dt_2, tt): # current function is for high speed movement
     trajectories = []
@@ -263,18 +177,24 @@ def generate_opt_path(valid_paths):
 
 
 if __name__ == "__main__":
+    '''
+    TODO
+    1. 장애물 충돌 여부 체크
+    2. 실제 시뮬레이션 
+    '''
     center_line_xlist = np.linspace(10, 30, 100)
     center_line_ylist = 0.1 * (center_line_xlist**2)
     center_line_slist = [world2frenet(rx, ry, center_line_xlist, center_line_ylist)[0] for (rx, ry) in list(zip(center_line_xlist, center_line_ylist))]
 
-    ego_x, ego_y = 10, 10
+    ego_x, ego_y = 10, 16
     frenet_s, frenet_d = world2frenet(ego_x, ego_y, center_line_xlist, center_line_ylist)
-    fplist = generate_frenet_trajectory((frenet_d, 1, 0, 0, 0), (frenet_s, 18, 0, 16, 0))
-    fplist = frenet_paths_to_world(fplist, center_line_xlist, center_line_ylist, center_line_slist)
-    valid_paths = check_valid_path(fplist, None, center_line_xlist, center_line_ylist, center_line_slist)
-    generate_opt_path(valid_paths)
     world_x, world_y, _ = frenet2world(frenet_s, frenet_d, center_line_xlist, center_line_ylist, center_line_slist)
     print(f"frenet coordinate (s, d): ({frenet_s}, {frenet_d})")
     print(f"world coordinate (x, y): ({world_x}, {world_y})")
     figuare.show_coord_transformation((ego_x, ego_y), (world_x, world_y), (center_line_xlist, center_line_ylist))
+    fplist = generate_frenet_trajectory((frenet_d, 1, 0, 0, 0), (frenet_s, 18, 0, 16, 0))
+    fplist = frenet_paths_to_world(fplist, center_line_xlist, center_line_ylist, center_line_slist)
+    valid_paths = check_valid_path(fplist, None, center_line_xlist, center_line_ylist, center_line_slist)
+    generate_opt_path(valid_paths)
+    
     figuare.show()
