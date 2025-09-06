@@ -1,11 +1,10 @@
-import numpy as np
-import matplotlib.pyplot as plt
-
-import figuare
+import figure
 from config import *
 from frenet import *
 from frenet_path import FrenetPath
+
 from polynomial import Quartic, Quintic
+from Car import Car
 
 def generate_lateral_movement(di_0, di_1, di_2, dt_1, dt_2, tt): # current function is for high speed movement
     trajectories = []
@@ -13,7 +12,7 @@ def generate_lateral_movement(di_0, di_1, di_2, dt_1, dt_2, tt): # current funct
         lat_traj = Quintic(di_0, di_1, di_2, dt_0, dt_1, dt_2, tt)
         
         if SHOW_LATERAL_PLOT:
-            figuare.show_lateral_traj(lat_traj, dt_0, tt)
+            figure.show_lateral_traj(lat_traj, dt_0, tt)
 
         t_list = [t for t in np.arange(0.0, tt, GEN_T_STEP)]
         d0_list = [lat_traj.get_position(t) for t in t_list]
@@ -47,7 +46,7 @@ def generate_longitudinal_movement(si_0, si_1, si_2, st_1, st_2, tt): # current 
         long_traj = Quartic(si_0, si_1, si_2, st_1, st_2, tt)
 
         if SHOW_LONGITUDINAL_PLOT:
-            figuare.show_longitudinal_traj(long_traj, st_1, tt)
+            figure.show_longitudinal_traj(long_traj, st_1, tt)
 
         t_list = [t for t in np.arange(0.0, tt, GEN_T_STEP)]
         s0_list = [long_traj.get_position(t) for t in t_list]
@@ -120,10 +119,10 @@ def generate_frenet_trajectory(lat_state, lon_state):
                     opt_lon_traj = (lon_traj['s1'], lat_traj['t'])
     
     if SHOW_OPT_LATERAL_PLOT:
-        figuare.show_opt_lateral_traj(opt_lat_traj)
+        figure.show_opt_lateral_traj(opt_lat_traj)
 
     if SHOW_OPT_LONGITUDINAL_PLOT:
-        figuare.show_opt_longitudinal_traj(opt_lon_traj)
+        figure.show_opt_longitudinal_traj(opt_lon_traj)
 
     return frenet_paths
 
@@ -151,26 +150,65 @@ def frenet_paths_to_world(frenet_paths, center_line_xlist, center_line_ylist, ce
             else:
                 fp.kappa.append(0.0)
 
-        # figuare.show_frenet_path_in_world(fp.xlist, fp.ylist)
+        # figure.show_frenet_path_in_world(fp.xlist, fp.ylist)
     
     return frenet_paths
 
-def check_valid_path(paths, obs, center_line_xlist, center_line_ylist, center_line_slist):
+def check_collision(path, obstacles):
+    for obstacle in obstacles:
+        is_collision = False
+        if obstacle['type'] != 'vehicle':
+            obj = obstacle['object']
+            obs_r = np.hypot(obj.width, obj.height) * 0.5
+
+            distance_list = [np.hypot(obj.x - x, obj.y - y) for x, y in zip(path.xlist, path.ylist)]
+            is_collision = any([d < obs_r + Car.BUBBLE_FRONT_R for d in distance_list])
+        else: # vehicle
+            obj = obstacle['object']
+            rear_distance_list = [np.hypot(obj.x - x, obj.y - y) for x, y in zip(path.xlist, path.ylist)]
+            rear_distance_list += [np.hypot(obj.x + obj.WHEEL_BASE * np.cos(obj.yaw) - x, obj.y + np.sin(obj.yaw) - y) for x, y in zip(path.xlist, path.ylist)]
+            is_rear_collision = any([d < obj.BUBBLE_FRONT_R + Car.BUBBLE_REAR_R for d in rear_distance_list])
+            front_distance_list = [np.hypot(obj.x - x + Car.WHEEL_BASE * np.cos(yaw), obj.y - y + np.sin(yaw)) for x, y, yaw in zip(path.xlist, path.ylist, path.yawlist)]
+            front_distance_list += [np.hypot(obj.x + obj.WHEEL_BASE * np.cos(obj.yaw) - x + Car.WHEEL_BASE * np.cos(yaw), obj.y + np.sin(obj.yaw) - y + np.sin(yaw)) for x, y, yaw in zip(path.xlist, path.ylist, path.yawlist)]
+            is_front_collision = any([d < obj.BUBBLE_REAR_R + Car.BUBBLE_FRONT_R for d in front_distance_list])
+
+            # print(is_rear_collision, is_front_collision)
+            is_collision = is_rear_collision or is_front_collision
+
+        if is_collision:
+            return True
+    return False
+
+def is_in_road(path, boundaries, center_line_xlist, center_line_ylist):
+
+    # for boundery in boundaries:
+    #     print(boundery[0])
+    frenet_boundaries = [world2frenet(0, boundery[0], center_line_xlist, center_line_ylist)[1] for boundery in boundaries]
+    road_d_min, road_d_max = np.min(frenet_boundaries), np.max(frenet_boundaries)
+    # print(f"{road_d_max}. {road_d_min}")
+    for d in path.d0:
+        if d < road_d_min or road_d_max < d:
+            return False
+    return True
+
+def check_valid_path(paths, obs, road_boundaries, center_line_xlist, center_line_ylist):
     valid_paths = []
     for path in paths:
         acc_squared = [(abs(a_s**2 + a_d**2)) for (a_s, a_d) in zip(path.s2, path.d2)]
+        # if not is_in_road(path, road_boundaries, center_line_xlist, center_line_ylist):
+        #     continue
         if any([v > V_MAX for v in path.s1]):
             continue
         elif any([acc > ACC_MAX**2 for acc in acc_squared]):
             continue
         elif any([abs(kappa) > K_MAX for kappa in path.kappa]):
             continue
-        # elif collision_check():
-        #     continue
+        elif check_collision(path, obs):
+            continue
         
         valid_paths.append(path)
     # for path in valid_paths:
-    #     figuare.show_frenet_valid_path_in_world(path.xlist, path.ylist)
+    #     figure.show_frenet_valid_path_in_world(path.xlist, path.ylist)
     return valid_paths
 
 def generate_opt_path(valid_paths):
@@ -182,24 +220,20 @@ def generate_opt_path(valid_paths):
 
 
 if __name__ == "__main__":
-    '''
-    TODO
-    1. 장애물 충돌 여부 체크
-    2. 실제 시뮬레이션 
-    '''
-    center_line_xlist = np.linspace(10, 30, 100)
-    center_line_ylist = 0.1 * (center_line_xlist**2)
-    center_line_slist = [world2frenet(rx, ry, center_line_xlist, center_line_ylist)[0] for (rx, ry) in list(zip(center_line_xlist, center_line_ylist))]
-
-    ego_x, ego_y = 10, 16
-    frenet_s, frenet_d = world2frenet(ego_x, ego_y, center_line_xlist, center_line_ylist)
-    world_x, world_y, _ = frenet2world(frenet_s, frenet_d, center_line_xlist, center_line_ylist, center_line_slist)
+    from sim import generate_road
+    # center_line_xlist = np.linspace(10, 30, 100)
+    # center_line_ylist = 0.1 * (center_line_xlist**2)
+    # center_line_slist = [world2frenet(rx, ry, center_line_xlist, center_line_ylist)[0] for (rx, ry) in list(zip(center_line_xlist, center_line_ylist))]
+    road = generate_road(lane_num=3, lane_width=3.5, road_length=300, curved=True)
+    ego_x, ego_y = 0, 1.75
+    frenet_s, frenet_d = world2frenet(ego_x, ego_y, road['center_xlist'], road['center_ylist'])
+    # world_x, world_y, _ = frenet2world(frenet_s, frenet_d, center_line_xlist, center_line_ylist, center_line_slist)
     print(f"frenet coordinate (s, d): ({frenet_s}, {frenet_d})")
-    print(f"world coordinate (x, y): ({world_x}, {world_y})")
-    # figuare.show_coord_transformation((ego_x, ego_y), (world_x, world_y), (center_line_xlist, center_line_ylist))
-    fplist = generate_frenet_trajectory((frenet_d, 1, 0, 0, 0), (frenet_s, 18, 0, 16, 0))
-    fplist = frenet_paths_to_world(fplist, center_line_xlist, center_line_ylist, center_line_slist)
-    valid_paths = check_valid_path(fplist, None, center_line_xlist, center_line_ylist, center_line_slist)
-    generate_opt_path(valid_paths)
+    # print(f"world coordinate (x, y): ({world_x}, {world_y})")
+    # # figuare.show_coord_transformation((ego_x, ego_y), (world_x, world_y), (center_line_xlist, center_line_ylist))
+    # fplist = generate_frenet_trajectory((frenet_d, 1, 0, 0, 0), (frenet_s, 18, 0, 16, 0))
+    # fplist = frenet_paths_to_world(fplist, center_line_xlist, center_line_ylist, center_line_slist)
+    # valid_paths = check_valid_path(fplist, None, center_line_xlist, center_line_ylist, center_line_slist)
+    # generate_opt_path(valid_paths)
     
     # figuare.show()

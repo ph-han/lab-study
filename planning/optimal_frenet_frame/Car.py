@@ -24,6 +24,9 @@ class Car:
     MAX_STEER = np.deg2rad(40)  # rad
     SPEED = 1.0
 
+    BUBBLE_REAR_R = WHEEL_BASE / 2
+    BUBBLE_FRONT_R = WHEEL_BASE / 2
+
     def __init__(self, x, y, yaw):
         self.x = x
         self.y = y
@@ -151,6 +154,11 @@ class Car:
         self.display_car(body_rot, ax)
         self.display_wheels(steer_rot, body_rot, ax)
         self.display_arrow(ax)
+        circle1 = plt.Circle((self.x, self.y), self.BUBBLE_REAR_R, fill=False, color="blue")
+        ax.add_artist(circle1)
+        circle2 = plt.Circle((self.x + Car.WHEEL_BASE * np.cos(self.yaw), self.y + Car.WHEEL_BASE * np.sin(self.yaw)), self.BUBBLE_REAR_R, fill=False, color="blue")
+        ax.add_artist(circle2)
+        ax.set_xlim(self.x - 10, self.x + 90)
 
 from scipy.interpolate import CubicSpline
 
