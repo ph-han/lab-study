@@ -1,8 +1,8 @@
-import planner
 import numpy as np
 import matplotlib.pyplot as plt
-from frenet import *
 
+import planner
+from frenet import *
 from config import *
 from Car import Car
 
@@ -12,7 +12,7 @@ def generate_road(lane_num=3, lane_width=3.5, road_length=100, curved=False, amp
     도로 좌표 데이터를 생성하는 함수
     Made by GhatGPT-5
     """
-    x = np.linspace(0, road_length, num_points)
+    x = np.linspace(-2, road_length, num_points)
 
     # 도로 중심선
     if curved:
@@ -74,6 +74,8 @@ class Simulator:
     def draw_obstacles(self, ax):
         for o in self.obs:
             if o['type'] == 'vehicle':
+                print(o['object'].x, o['object'].y, o['object'].idm.v)
+                o['object'].update_state(self.obs, self.center_line_xlist, self.center_line_ylist, self.center_line_slist)
                 o['object'].draw(ax)
             else:
                 half_width = o['object'].width / 2
@@ -106,32 +108,30 @@ class Simulator:
             ax.figure.canvas.mpl_connect(
                 'key_release_event',
                 lambda event: [exit(0) if event.key == 'escape' else None])
-            fplist = planner.generate_frenet_trajectory((d0, d1, d2, 0, 0), (s0, s1, s2, 0, 0))
-            fplist = planner.frenet_paths_to_world(fplist, self.center_line_xlist, self.center_line_ylist, self.center_line_slist)
-            valid_paths = planner.check_valid_path(fplist, self.obs, self.road['boundaries'], self.center_line_xlist, self.center_line_ylist)
-            opt_path = planner.generate_opt_path(valid_paths)
-            if not opt_path:
-                print(f"{i} step error no path!")
-                break
-            s0 = opt_path.s0[1]
-            s1 = opt_path.s1[1]
-            s2 = opt_path.s2[1]
-            d0 = opt_path.d0[1]
-            d1 = opt_path.d1[1]
-            d2 = opt_path.d2[1]
-            opt_d = opt_path.d0[1]
-            # print(s0, s1, s2, d0, d1, d2)
-            # self.move_car(ax, opt_path)
+            # fplist = planner.generate_frenet_trajectory((d0, d1, d2, 0, 0), (s0, s1, s2, 0, 0))
+            # fplist = planner.frenet_paths_to_world(fplist, self.center_line_xlist, self.center_line_ylist, self.center_line_slist)
+            # valid_paths = planner.check_valid_path(fplist, self.obs, self.road['boundaries'], self.center_line_xlist, self.center_line_ylist)
+            # opt_path = planner.generate_opt_path(valid_paths)
+            # if not opt_path:
+            #     print(f"{i} step error no path!")
+            #     break
+            # s0 = opt_path.s0[1]
+            # s1 = opt_path.s1[1]
+            # s2 = opt_path.s2[1]
+            # d0 = opt_path.d0[1]
+            # d1 = opt_path.d1[1]
+            # d2 = opt_path.d2[1]
+            # opt_d = opt_path.d0[1]
+            # print(f"current opt d : {opt_d}, desired d: {DESIRED_LAT_POS}")
             ax.cla()
-            self.ego.x, self.ego.y, self.ego.yaw = opt_path.xlist[0], opt_path.ylist[0], opt_path.yawlist[0]
-            ax.text(self.ego.x + Car.WHEEL_BASE // 2,
-                    self.ego.y + Car.OVERALL_WIDTH + 2,
-                    f'ego', ha='center', va='top')
+            # self.ego.x, self.ego.y, self.ego.yaw = opt_path.xlist[0], opt_path.ylist[0], opt_path.yawlist[0]
+            # ax.text(self.ego.x + Car.WHEEL_BASE // 2,
+            #         self.ego.y + Car.OVERALL_WIDTH + 2,
+            #         f'ego', ha='center', va='top')
             self.draw_obstacles(ax)
             self.ego.draw(ax)
-            self.draw_valid_paths_and_opt_path(ax, valid_paths, opt_path)
-            # ax.plot(opt_path.xlist, opt_path.ylist, '-', color="#6cf483")
+            # self.draw_valid_paths_and_opt_path(ax, valid_paths, opt_path)
             plot_road(ax, self.road)
-            ax.set_title(f"{lane_num}-lane Road Map | ego speed :{s1 * 3.6:.2f} kph, desired speed: {DESIRED_SPEED * 3.6} kph")
+            ax.set_title(f"{lane_num}-lane Road Map | ego speed :{s1:.2f} m/s, desired speed: {DESIRED_SPEED} m/s")
             plt.pause(0.1)
-        # ego.draw(ax)
+

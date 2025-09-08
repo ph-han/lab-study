@@ -2,6 +2,9 @@ from math import cos, sin, tan, pi
 import numpy as np
 import matplotlib.pyplot as plt
 
+from IDM import IDMVehicle
+from config import V_MAX, ACC_MAX
+from frenet import frenet2world
 
 class Car:
     """
@@ -27,54 +30,28 @@ class Car:
     BUBBLE_REAR_R = WHEEL_BASE / 2
     BUBBLE_FRONT_R = WHEEL_BASE / 2
 
-    def __init__(self, x, y, yaw):
+    def __init__(self, x, y, yaw, s=0, d=0):
         self.x = x
         self.y = y
+        self.s = s
+        self.d = d
         self.yaw = Car.pi_2_pi(yaw)
         self.steer = 0.0
+        self.idm = IDMVehicle(s, v0=V_MAX, a_max=ACC_MAX, s0=self.OVERALL_LENGTH, length=self.OVERALL_LENGTH)
 
-    @staticmethod
-    def point_in_polygon(px, py, poly_x, poly_y):
-        n = len(poly_x)
-        inside = False
-        j = n - 1
-        for i in range(n):
-            if ((poly_y[i] > py) != (poly_y[j] > py)) and \
-                    (px < (poly_x[j] - poly_x[i]) * (py - poly_y[i]) / (poly_y[j] - poly_y[i]) + poly_x[i]):
-                inside = not inside
-            j = i
-        return inside
+    
+    def update_state(self, npcs, cxlist, cylist, cslist, dt=0.1):
+        npcs.sort(key=lambda car: car['object'].s)
+        for i, npc in enumerate(npcs):
+            if i+1 < len(npcs) and npc['object'].d == npcs[i+1]['object'].d:
+                leader = npcs[i+1]['object'].idm
+                self.idm.update_acceleration(leader)
+                break
 
-    def is_collision(self, map, nx, ny, nyaw):
-        half_width = self.OVERALL_WIDTH / 2
-
-        car = np.array([
-            [-self.REAR_OVERHANG, -self.REAR_OVERHANG, self.WHEEL_BASE + self.FRONT_OVERHANG,
-             self.WHEEL_BASE + self.FRONT_OVERHANG, -self.REAR_OVERHANG],
-            [half_width, -half_width, -half_width, half_width, half_width]
-        ], dtype=np.float32)
-
-        body_rot = np.array([
-            [cos(nyaw), -sin(nyaw)],
-            [sin(nyaw), cos(nyaw)]
-        ], dtype=np.float32)
-
-        car_pos = np.dot(body_rot, car) + np.array([[nx], [ny]])
-        car_x = car_pos[0]
-        car_y = car_pos[1]
-
-        min_x = max(int(np.floor(car_x.min())), 0)
-        max_x = min(int(np.ceil(car_x.max())) + 1, map.x_width)
-        min_y = max(int(np.floor(car_y.min())), 0)
-        max_y = min(int(np.ceil(car_y.max())) + 1, map.y_width)
-
-        for y in range(min_y, max_y):
-            for x in range(min_x, max_x):
-                if map.obstacle_map[x][y]:
-                    if Car.point_in_polygon(x, y, car_x, car_y):
-                        return True
-
-        return False
+        self.idm.update_state(dt)
+        self.s = self.idm.get_s()
+        self.x, self.y, self.yaw = frenet2world(self.idm.get_s(), self.d, cxlist, cylist, cslist)
+       
 
     @staticmethod
     def pi_2_pi(angle):
@@ -159,76 +136,5 @@ class Car:
         circle2 = plt.Circle((self.x + Car.WHEEL_BASE * np.cos(self.yaw), self.y + Car.WHEEL_BASE * np.sin(self.yaw)), self.BUBBLE_REAR_R, fill=False, color="blue")
         ax.add_artist(circle2)
         ax.set_xlim(self.x - 10, self.x + 90)
-
-from scipy.interpolate import CubicSpline
-
-def poly_test(nx, ny, nyaw):
-    half_width = Car.OVERALL_WIDTH / 2
-
-    car = np.array([
-        [-Car.REAR_OVERHANG, -Car.REAR_OVERHANG, Car.WHEEL_BASE + Car.FRONT_OVERHANG,
-         Car.WHEEL_BASE + Car.FRONT_OVERHANG, -Car.REAR_OVERHANG],
-        [half_width, -half_width, -half_width, half_width, half_width]
-    ], dtype=np.float32)
-
-    body_rot = np.array([
-        [cos(nyaw), -sin(nyaw)],
-        [sin(nyaw), cos(nyaw)]
-    ], dtype=np.float32)
-
-    car_pos = np.dot(body_rot, car) + np.array([[nx], [ny]])
-    car_x = car_pos[0]
-    car_y = car_pos[1]
-
-    print(f"TEST {Car.point_in_polygon(10, 11, car_x, car_y)}")
-
-if __name__ == "__main__":
-
-    ioniq5 = Car(x=10.0, y=10.0, yaw=np.deg2rad(90))
-    ioniq5.draw()
-    plt.show()
-    poly_test(ioniq5.x, ioniq5.y, ioniq5.yaw)
-    # trajectory_x = [ioniq5.x]
-    # trajectory_y = [ioniq5.y]
-    # trajectory_yaw = [ioniq5.yaw]
-    # trajectory_steer = [ioniq5.steer]
-    #
-    # for steer in np.arange(-ioniq5.MAX_STEER, ioniq5.MAX_STEER, np.deg2rad(5)):
-    #     nx, ny, nyaw = Car.action(ioniq5.x, ioniq5.y, ioniq5.yaw, steer)
-    #     ioniq5.x, ioniq5.y, ioniq5.yaw = nx, ny, nyaw
-    #     trajectory_x.append(nx)
-    #     trajectory_y.append(ny)
-    #     trajectory_yaw.append(nyaw)
-    #     trajectory_steer.append(steer)
-    #
-    # s = np.arange(len(trajectory_x))
-    # spline_x = CubicSpline(s, trajectory_x)
-    # spline_y = CubicSpline(s, trajectory_y)
-    # spline_yaw = CubicSpline(s, trajectory_yaw)
-    # spline_steer = CubicSpline(s, trajectory_steer)
-    # s_fine = np.linspace(0, len(trajectory_x) - 1, 500)
-    #
-    # ioniq5 = Car(x=spline_x(0), y=spline_y(0), yaw=np.deg2rad(270))
-    # plt.figure(figsize=(10, 10))
-    #
-    # plt.plot(spline_x(s_fine), spline_y(s_fine), "--", color="gray", label="planned path")
-    #
-    # for t in range(len(s_fine)):
-    #     ioniq5.x = spline_x(s_fine[t])
-    #     ioniq5.y = spline_y(s_fine[t])
-    #     ioniq5.yaw = spline_yaw(s_fine[t])
-    #     ioniq5.steer = spline_steer(s_fine[t])
-    #
-    #     plt.cla()
-    #     plt.plot(spline_x(s_fine), spline_y(s_fine), "--", color="gray", label="planned path")
-    #     plt.xlim(min(trajectory_x) - 2, max(trajectory_x) + 2)
-    #     plt.ylim(min(trajectory_y) - 2, max(trajectory_y) + 2)
-    #     plt.grid(True)
-    #     plt.axis("equal")
-    #     ioniq5.draw()
-    #     plt.legend()
-    #     plt.pause(0.01)
-    #
-    # plt.show()
 
 

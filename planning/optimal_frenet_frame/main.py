@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import random
 
 import frenet
 from sim import Simulator, generate_road
@@ -15,6 +16,23 @@ TODO
     - [] stop
 '''
 
+def spawn_frenet_npcs(cxlist, cylist, cslist, num_npcs=7, road_length=100, lane_num=3, lane_width=3.5):
+    npcs = []
+    for i in range(num_npcs):
+        lane = random.randint(0, lane_num - 1)
+        d = (lane - (lane_num - 1)/2) * lane_width
+        s = random.uniform(0, road_length - 10)
+
+        x, y, yaw = frenet.frenet2world(s, d, cxlist, cylist, cslist)
+
+        npc = {
+            'type': 'vehicle',
+            'object': Car(x, y, yaw, s, d)
+        }
+        npcs.append(npc)
+    npcs.sort(key=lambda car: car['object'].s)
+    return npcs
+
 if __name__ == "__main__":
     road = generate_road(lane_num=3, lane_width=3.5, road_length=300, curved=True)
     ego = Car(0, 3.5, 0)
@@ -28,8 +46,13 @@ if __name__ == "__main__":
         {
             "type": 'vehicle',
             "object": npc
-        }
+        },
     ]
+
+    for npc in spawn_frenet_npcs(road['center_xlist'], road['center_ylist'], slist):
+        obstacles.append(npc)
+
+    print(obstacles)
     fig, ax = plt.subplots(figsize=(10,6))
     sim = Simulator(obstacles, road, ego)
     sim.simple_example(ax)
