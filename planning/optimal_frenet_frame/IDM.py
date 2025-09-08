@@ -2,7 +2,7 @@ import math
 import matplotlib.pyplot as plt
 
 class IDMVehicle:
-    def __init__(self, s=0, v=0, v0=20, T=1.5, a_max=1.0, b_comf=1.5, s0=2.0, length=4.0):
+    def __init__(self, s=0, v=0, v0=20, T=1.0, a_max=1.0, b_comf=1.5, s0=2.0, length=4.0):
         # --- 차량의 현재 상태 ---
         self.x = s  # 위치 (m)
         self.v = v  # 속도 (m/s)
@@ -22,7 +22,7 @@ class IDMVehicle:
         if leader:
             # 앞차가 있으면 간격(s)과 상대 속도(delta_v) 계산
             # 간격(s) = 앞차 위치 - 내 차 위치 - 앞차 길이
-            s = leader.x - self.x - leader.length
+            s = max(1e-5, leader.x - self.x - leader.length)
             delta_v = self.v - leader.v
         else:
             # 앞차가 없으면 상호작용 항이 0이 되도록 설정
@@ -30,7 +30,6 @@ class IDMVehicle:
             delta_v = 0
 
         # 0으로 나누기 방지
-        if s < 1e-5: s = 1e-5
 
         s_star = self.s0 + max(0, self.v * self.T + (self.v * delta_v) / (2 * math.sqrt(self.a_max * self.b_comf)))
 

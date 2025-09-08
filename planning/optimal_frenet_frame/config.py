@@ -7,8 +7,8 @@ DT_0_MAX = 3.5
 DT_0_STEP = 3.5
 
 # longitunial final state position config
-ST_1_MIN = 4
-ST_1_MAX = 10
+ST_1_MIN = 0
+ST_1_MAX = 20
 ST_1_STEP = 1
 
 # terminal time config
@@ -30,12 +30,12 @@ K_J = 0.01
 K_T = 0.1
 K_D = 10.0
 K_S = 10.0
-K_LAT = 1.0
-K_LON = 1.5
+K_LAT = 1.5
+K_LON = 1.0
 
 DESIRED_LAT_POS = 0
-DESIRED_SPEED = 8
+DESIRED_SPEED = 20
 DESIRED_DISTACE = 16
 V_MAX = 20
-ACC_MAX = 4
-K_MAX = 4
+ACC_MAX = 10
+K_MAX = 10

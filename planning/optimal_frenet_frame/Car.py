@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from IDM import IDMVehicle
-from config import V_MAX, ACC_MAX
+from config import V_MAX, ACC_MAX, DESIRED_SPEED
 from frenet import frenet2world
 
 class Car:
@@ -37,19 +37,27 @@ class Car:
         self.d = d
         self.yaw = Car.pi_2_pi(yaw)
         self.steer = 0.0
-        self.idm = IDMVehicle(s, v0=V_MAX, a_max=ACC_MAX, s0=self.OVERALL_LENGTH, length=self.OVERALL_LENGTH)
+        self.idm = IDMVehicle(s, v=0, v0=4, a_max=ACC_MAX, s0=self.OVERALL_LENGTH, length=self.OVERALL_LENGTH)
 
     
     def update_state(self, npcs, cxlist, cylist, cslist, dt=0.1):
+        # s좌표 기준 정렬
         npcs.sort(key=lambda car: car['object'].s)
-        for i, npc in enumerate(npcs):
-            if i+1 < len(npcs) and npc['object'].d == npcs[i+1]['object'].d:
-                leader = npcs[i+1]['object'].idm
-                self.idm.update_acceleration(leader)
-                break
 
-        self.idm.update_state(dt)
+        # 가장 가까운 앞차 찾기
+        leader = None
+        min_gap = float('inf')
+        for npc in npcs:
+            if npc['object'].d == self.d and npc['object'].s > self.s:
+                gap = npc['object'].s - self.s
+                if gap < min_gap:
+                    min_gap = gap
+                    leader = npc['object'].idm
+
         self.s = self.idm.get_s()
+        if self.s < 300:
+            self.idm.update_acceleration(leader)
+            self.idm.update_state()
         self.x, self.y, self.yaw = frenet2world(self.idm.get_s(), self.d, cxlist, cylist, cslist)
        
 
@@ -135,6 +143,6 @@ class Car:
         ax.add_artist(circle1)
         circle2 = plt.Circle((self.x + Car.WHEEL_BASE * np.cos(self.yaw), self.y + Car.WHEEL_BASE * np.sin(self.yaw)), self.BUBBLE_REAR_R, fill=False, color="blue")
         ax.add_artist(circle2)
-        ax.set_xlim(self.x - 10, self.x + 90)
+        
 
 
