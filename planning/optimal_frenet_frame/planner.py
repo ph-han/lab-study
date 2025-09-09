@@ -72,7 +72,7 @@ def generate_longitudinal_movement(si_0, si_1, si_2, st_1, st_2, tt): # current 
         trajectories.append(generated_traj)
     return trajectories
 
-def generate_frenet_trajectory(lat_state, lon_state):
+def generate_frenet_trajectory(lat_state, lon_state, opt_d):
     frenet_paths = []
 
     opt_lon_cost = np.inf
@@ -98,7 +98,7 @@ def generate_frenet_trajectory(lat_state, lon_state):
                 fp.s2 = lon_traj['s2']
                 fp.sj = lon_traj['jerk']
 
-                d_diff = (lat_traj['d0'][-1] - DESIRED_LAT_POS)**2
+                d_diff = (lat_traj['d0'][-1] - opt_d)**2
                 lat_cost = K_J * sum(np.power(lat_traj['jerk'], 2)) + K_T * 1 + K_D * d_diff
                 fp.lat_cost = lat_cost
 
@@ -163,15 +163,15 @@ def check_collision(path, obstacles):
             obs_r = 0.5 * np.hypot(obj.width, obj.height)
             for x, y in zip(path.xlist, path.ylist):
                 d = np.hypot(obj.x - x, obj.y - y)
-                if d < obs_r + Car.BUBBLE_FRONT_R:
-                    is_collision = True
-                    break
+                if d < obs_r + Car.BUBBLE_R:
+                    return True
 
         else:
             obs_rear_x = obj.x
             obs_rear_y = obj.y
             obs_front_x = obj.x + obj.WHEEL_BASE * np.cos(obj.yaw)
             obs_front_y = obj.y + obj.WHEEL_BASE * np.sin(obj.yaw)
+            gap = 0.0
 
             for x, y, yaw in zip(path.xlist, path.ylist, path.yawlist):
                 ego_rear_x, ego_rear_y = x, y
@@ -183,22 +183,19 @@ def check_collision(path, obstacles):
                 d_fr = np.hypot(ego_front_x - obs_rear_x, ego_front_y - obs_rear_y)
                 d_ff = np.hypot(ego_front_x - obs_front_x, ego_front_y - obs_front_y)
 
-                if (d_rr < Car.BUBBLE_REAR_R + obj.BUBBLE_REAR_R or
-                    d_rf < Car.BUBBLE_REAR_R + obj.BUBBLE_FRONT_R or
-                    d_fr < Car.BUBBLE_FRONT_R + obj.BUBBLE_REAR_R or
-                    d_ff < Car.BUBBLE_FRONT_R + obj.BUBBLE_FRONT_R):
-                    is_collision = True
-                    break
-
-        if is_collision:
-            return True
+                if (d_rr + gap < Car.BUBBLE_R + obj.BUBBLE_R or
+                    d_rf + gap < Car.BUBBLE_R + obj.BUBBLE_R or
+                    d_fr + gap < Car.BUBBLE_R + obj.BUBBLE_R or
+                    d_ff + gap < Car.BUBBLE_R + obj.BUBBLE_R):
+                    return True
     return False
 
 def is_in_road(path, boundaries, center_line_xlist, center_line_ylist):
-    frenet_boundaries = [world2frenet(0, boundery[0], center_line_xlist, center_line_ylist)[1] for boundery in boundaries]
+    frenet_boundaries = [world2frenet(0, boundery, center_line_xlist, center_line_ylist)[1] for boundery in [5.25, -5.25]]
     road_d_min, road_d_max = np.min(frenet_boundaries), np.max(frenet_boundaries)
+    print(road_d_min, road_d_max)
     for d in path.d0:
-        if d < road_d_min or road_d_max < d:
+        if d <= road_d_min or road_d_max <= d:
             return False
     return True
 
@@ -206,8 +203,6 @@ def check_valid_path(paths, obs, road_boundaries, center_line_xlist, center_line
     valid_paths = []
     for path in paths:
         acc_squared = [(abs(a_s**2 + a_d**2)) for (a_s, a_d) in zip(path.s2, path.d2)]
-        if not is_in_road(path, road_boundaries, center_line_xlist, center_line_ylist):
-            continue
         if any([v > V_MAX for v in path.s1]):
             continue
         elif any([acc > ACC_MAX**2 for acc in acc_squared]):
@@ -215,6 +210,8 @@ def check_valid_path(paths, obs, road_boundaries, center_line_xlist, center_line
         elif any([abs(kappa) > K_MAX for kappa in path.kappa]):
             continue
         elif check_collision(path, obs):
+            continue
+        elif not is_in_road(path, road_boundaries, center_line_xlist, center_line_ylist):
             continue
         
         valid_paths.append(path)

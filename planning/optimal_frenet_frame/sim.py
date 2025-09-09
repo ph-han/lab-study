@@ -67,14 +67,14 @@ class Simulator:
             ]
         
     def draw_valid_paths_and_opt_path(self, ax, paths, opt_path):
-        for path in paths:
-            ax.plot(path.xlist, path.ylist, '-', color="#A2C0F5")
+        # for path in paths:
+        #     ax.plot(path.xlist, path.ylist, '-', color="#A2C0F5")
         ax.plot(opt_path.xlist, opt_path.ylist, '-', color="#6cf483")
 
     def draw_obstacles(self, ax):
         for o in self.obs:
             if o['type'] == 'vehicle':
-                o['object'].update_state(self.obs, self.center_line_xlist, self.center_line_ylist, self.center_line_slist)
+                o['object'].update_state(self.obs, self.center_line_xlist, self.center_line_ylist, self.center_line_slist, dt=0.01)
                 o['object'].draw(ax)
             else:
                 half_width = o['object'].width / 2
@@ -102,12 +102,13 @@ class Simulator:
     def simple_example(self, ax):
         s0, d0 = world2frenet(self.ego.x, self.ego.y, self.center_line_xlist, self.center_line_ylist)
         s1, s2, d1, d2 = 0, 0, 0, 0
+        opt_d = 0
         lane_num = 3
         for i in range(500):
             ax.figure.canvas.mpl_connect(
                 'key_release_event',
                 lambda event: [exit(0) if event.key == 'escape' else None])
-            fplist = planner.generate_frenet_trajectory((d0, d1, d2, 0, 0), (s0, s1, s2, DESIRED_SPEED, 0))
+            fplist = planner.generate_frenet_trajectory((d0, d1, d2, 0, 0), (s0, s1, s2, DESIRED_SPEED, 0), opt_d)
             fplist = planner.frenet_paths_to_world(fplist, self.center_line_xlist, self.center_line_ylist, self.center_line_slist)
             valid_paths = planner.check_valid_path(fplist, self.obs, self.road['boundaries'], self.center_line_xlist, self.center_line_ylist)
             opt_path = planner.generate_opt_path(valid_paths)
@@ -121,14 +122,13 @@ class Simulator:
             d1 = opt_path.d1[1]
             d2 = opt_path.d2[1]
             opt_d = opt_path.d0[1]
-            print(f"current opt d : {opt_d}, desired d: {DESIRED_LAT_POS}")
             ax.cla()
             self.ego.x, self.ego.y, self.ego.yaw = opt_path.xlist[0], opt_path.ylist[0], opt_path.yawlist[0]
             ax.text(self.ego.x + Car.WHEEL_BASE // 2,
                     self.ego.y + Car.OVERALL_WIDTH + 2,
                     f'ego', ha='center', va='top')
-            self.draw_obstacles(ax)
             self.ego.draw(ax)
+            self.draw_obstacles(ax)
             self.draw_valid_paths_and_opt_path(ax, valid_paths, opt_path)
             plot_road(ax, self.road)
             ax.set_title(f"{lane_num}-lane Road Map | ego speed :{s1:.2f} m/s, desired speed: {DESIRED_SPEED} m/s")

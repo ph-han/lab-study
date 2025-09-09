@@ -26,16 +26,17 @@ SHOW_OPT_PATH = False
 SHOW_VALID_PATH = False
 
 # cost config
-K_J = 0.01
-K_T = 0.1
-K_D = 10.0
-K_S = 10.0
-K_LAT = 1.5
+K_J   = 0.01
+K_T   = 0.10
+K_D   = 12.0
+K_S   = 8.0
+K_LAT = 1.0
 K_LON = 1.0
+
 
 DESIRED_LAT_POS = 0
 DESIRED_SPEED = 20
 DESIRED_DISTACE = 16
 V_MAX = 20
 ACC_MAX = 10
-K_MAX = 10
+K_MAX = 8

@@ -45,7 +45,7 @@ def spawn_frenet_npcs(cxlist, cylist, cslist, num_npcs=7, road_length=150, lane_
 
 
 if __name__ == "__main__":
-    road = generate_road(lane_num=3, lane_width=3.5, road_length=300, curved=False)
+    road = generate_road(lane_num=3, lane_width=3.5, road_length=300, curved=True)
     ego = Car(0, 0, 0)
     slist = [
         frenet.world2frenet(rx, ry, road['center_xlist'], road['center_ylist'])[0] \
@@ -63,7 +63,6 @@ if __name__ == "__main__":
     for npc in spawn_frenet_npcs(road['center_xlist'], road['center_ylist'], slist):
         obstacles.append(npc)
 
-    print(obstacles)
     fig, ax = plt.subplots(figsize=(10,6))
     sim = Simulator(obstacles, road, ego)
     sim.simple_example(ax)
