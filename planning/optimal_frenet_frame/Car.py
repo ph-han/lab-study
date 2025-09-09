@@ -6,6 +6,44 @@ from IDM import IDMVehicle
 from config import V_MAX, ACC_MAX, DESIRED_SPEED
 from frenet import frenet2world
 
+class StaticCar:
+    """
+    Car
+
+    The unit is in meters.
+    This model is based on the IONIQ 5.
+
+    """
+    # The unit is in meters.
+    OVERALL_LENGTH = 7
+    FRONT_OVERHANG = 0.845
+    REAR_OVERHANG = 0.79
+    OVERALL_WIDTH = 1.890
+    TRACK_WIDTH  = 1.647
+    WHEEL_BASE = 3.0
+    TR = 0.24
+    TW = 0.48
+
+    MAX_STEER = np.deg2rad(40)  # rad
+    SPEED = 1.0
+
+    BUBBLE_R = (WHEEL_BASE * 2) / 5
+
+    def __init__(self, x, y, yaw):
+        self.x = x
+        self.y = y
+        self.width = self.OVERALL_WIDTH
+        self.height = self.OVERALL_LENGTH
+        self.yaw = Car.pi_2_pi(yaw)
+
+
+    @staticmethod
+    def pi_2_pi(angle):
+        return (angle + pi) % (2 * pi) - pi
+
+
+        
+
 class Car:
     """
     Car
@@ -27,7 +65,7 @@ class Car:
     MAX_STEER = np.deg2rad(40)  # rad
     SPEED = 1.0
 
-    BUBBLE_R = WHEEL_BASE / 2
+    BUBBLE_R = (WHEEL_BASE * 2) / 5
 
     def __init__(self, x, y, yaw, s=0, d=0):
         self.x = x

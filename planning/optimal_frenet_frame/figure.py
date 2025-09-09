@@ -34,10 +34,13 @@ def show_opt_lateral_traj(opt_traj):
     plt.plot(tlist, dlist, '-', color="#6cf483", lw=3)
     plt.grid(True)
 
-def show_longitudinal_traj(traj, st_1, tt):
+def show_longitudinal_traj(traj, st_1, tt, velocity_keeping=True):
     plt.figure(3)
     tlist = np.linspace(0, tt, 500)
-    slist = [traj.get_velocity(t) for t in tlist]
+    if velocity_keeping:
+        slist = [traj.get_velocity(t) for t in tlist]
+    else:
+        slist = [traj.get_position(t) for t in tlist]
     if tt != config.TT_MAX:
         tlist = tlist.tolist() + [config.TT_MAX]
         slist.append(st_1)

@@ -1,4 +1,5 @@
 import numpy as np
+import random
 import matplotlib.pyplot as plt
 
 import planner
@@ -6,6 +7,30 @@ from frenet import *
 from config import *
 from Car import Car
 
+def spawn_frenet_npcs(cxlist, cylist, cslist, num_npcs=7, road_length=80, lane_num=3, lane_width=3.5, min_gap=5.0):
+    npcs = []
+    slist = []
+
+    for i in range(num_npcs):
+        lane = random.randint(0, lane_num - 1)
+        d = (lane - (lane_num - 1) / 2) * lane_width
+
+        while True:
+            s = random.uniform(5, road_length)
+            if all(abs(s - s0) >= min_gap for s0 in slist):
+                break
+
+        slist.append(s)
+        x, y, yaw = frenet2world(s, d, cxlist, cylist, cslist)
+
+        npc = {
+            'type': 'vehicle',
+            'object': Car(x, y, yaw, s, d)
+        }
+        npcs.append(npc)
+
+    npcs.sort(key=lambda car: car['object'].s)
+    return npcs
 
 def generate_road(lane_num=3, lane_width=3.5, road_length=100, curved=False, amp=5, freq=0.05, num_points=1000):
     """
@@ -55,7 +80,7 @@ def plot_road(ax, road_data):
 
 
 class Simulator:
-    def __init__(self, obs, road, ego):
+    def __init__(self, obs, road, ego, velocity_keeping=True):
         self.obs = obs
         self.road = road
         self.ego = ego
@@ -65,13 +90,17 @@ class Simulator:
             world2frenet(rx, ry, self.center_line_xlist, self.center_line_ylist)[0] \
                 for (rx, ry) in list(zip(self.center_line_xlist, self.center_line_ylist))
             ]
+        self.velocity_keeping=velocity_keeping
         
     def draw_valid_paths_and_opt_path(self, ax, paths, opt_path):
-        # for path in paths:
-        #     ax.plot(path.xlist, path.ylist, '-', color="#A2C0F5")
+        for path in paths:
+            ax.plot(path.xlist, path.ylist, '-', color="#A2C0F5")
         ax.plot(opt_path.xlist, opt_path.ylist, '-', color="#6cf483")
 
     def draw_obstacles(self, ax):
+        if not self.obs:
+            return
+        
         for o in self.obs:
             if o['type'] == 'vehicle':
                 o['object'].update_state(self.obs, self.center_line_xlist, self.center_line_ylist, self.center_line_slist, dt=0.01)
@@ -99,7 +128,7 @@ class Simulator:
             
             plt.pause(0.01)
 
-    def simple_example(self, ax):
+    def run(self, ax):
         s0, d0 = world2frenet(self.ego.x, self.ego.y, self.center_line_xlist, self.center_line_ylist)
         s1, s2, d1, d2 = 0, 0, 0, 0
         opt_d = 0
@@ -108,7 +137,7 @@ class Simulator:
             ax.figure.canvas.mpl_connect(
                 'key_release_event',
                 lambda event: [exit(0) if event.key == 'escape' else None])
-            fplist = planner.generate_frenet_trajectory((d0, d1, d2, 0, 0), (s0, s1, s2, DESIRED_SPEED, 0), opt_d)
+            fplist = planner.generate_frenet_trajectory((d0, d1, d2, 0, 0), (s0, s1, s2, DESIRED_SPEED, 0), opt_d, self.velocity_keeping)
             fplist = planner.frenet_paths_to_world(fplist, self.center_line_xlist, self.center_line_ylist, self.center_line_slist)
             valid_paths = planner.check_valid_path(fplist, self.obs, self.road['boundaries'], self.center_line_xlist, self.center_line_ylist)
             opt_path = planner.generate_opt_path(valid_paths)
@@ -124,14 +153,11 @@ class Simulator:
             opt_d = opt_path.d0[1]
             ax.cla()
             self.ego.x, self.ego.y, self.ego.yaw = opt_path.xlist[0], opt_path.ylist[0], opt_path.yawlist[0]
-            ax.text(self.ego.x + Car.WHEEL_BASE // 2,
-                    self.ego.y + Car.OVERALL_WIDTH + 2,
-                    f'ego', ha='center', va='top')
             self.ego.draw(ax)
-            self.draw_obstacles(ax)
             self.draw_valid_paths_and_opt_path(ax, valid_paths, opt_path)
+            self.draw_obstacles(ax)
             plot_road(ax, self.road)
             ax.set_title(f"{lane_num}-lane Road Map | ego speed :{s1:.2f} m/s, desired speed: {DESIRED_SPEED} m/s")
-            ax.set_xlim(self.ego.x - 10, self.ego.x + 90)
+            ax.set_xlim(self.ego.x - 10, self.ego.x + 40)
             plt.pause(0.1)
 

@@ -38,7 +38,7 @@ def generate_lateral_movement(di_0, di_1, di_2, dt_1, dt_2, tt): # current funct
     return trajectories
 
 
-def generate_longitudinal_movement(si_0, si_1, si_2, st_1, st_2, tt): # current function is for velocity keeping
+def generate_velocity_keeping(si_0, si_1, si_2, st_1, st_2, tt): # current function is for velocity keeping
 
     trajectories = []
     for st_1 in np.arange(ST_1_MIN, ST_1_MAX + ST_1_STEP, ST_1_STEP):
@@ -72,7 +72,40 @@ def generate_longitudinal_movement(si_0, si_1, si_2, st_1, st_2, tt): # current 
         trajectories.append(generated_traj)
     return trajectories
 
-def generate_frenet_trajectory(lat_state, lon_state, opt_d):
+def generate_follwing_merging_and_stopping(si_0, si_1, si_2, st_1, st_2, tt): # current function is for velocity keeping
+
+    trajectories = []
+    for st_0 in np.arange(si_0 + ST_0_MIN, si_0 + ST_0_MAX + ST_0_STEP, ST_0_STEP):
+        long_traj = Quintic(si_0, si_1, si_2, st_0, st_1, st_2, tt)
+
+        if SHOW_LONGITUDINAL_PLOT:
+            figure.show_longitudinal_traj(long_traj, st_1, tt)
+
+        t_list = [t for t in np.arange(0.0, tt, GEN_T_STEP)]
+        s0_list = [long_traj.get_position(t) for t in t_list]
+        s1_list = [long_traj.get_velocity(t) for t in t_list]
+        s2_list = [long_traj.get_acceleration(t) for t in t_list]
+        sj_list = [long_traj.get_jerk(t) for t in t_list]
+
+        for t in np.arange(tt, TT_MAX + GEN_T_STEP, GEN_T_STEP):
+            t_list.append(t)
+            s0_list.append(s0_list[-1])
+            s1_list.append(s1_list[-1])
+            s2_list.append(s2_list[-1])
+            sj_list.append(sj_list[-1])
+
+        generated_traj = {
+            't': t_list,
+            's0': s0_list,
+            's1': s1_list,
+            's2': s2_list,
+            'jerk': sj_list
+
+        }
+        trajectories.append(generated_traj)
+    return trajectories
+
+def generate_frenet_trajectory(lat_state, lon_state, opt_d, velocity_keeping=True):
     frenet_paths = []
 
     opt_lon_cost = np.inf
@@ -81,7 +114,10 @@ def generate_frenet_trajectory(lat_state, lon_state, opt_d):
     opt_lat_traj = None
     for tt in np.arange(TT_MIN, TT_MAX + TT_STEP, TT_STEP):
         lat_traj_list = generate_lateral_movement(*lat_state, tt)
-        lon_traj_list = generate_longitudinal_movement(*lon_state, tt)
+        if velocity_keeping:
+            lon_traj_list = generate_velocity_keeping(*lon_state, tt)
+        else:
+            lon_traj_list = generate_follwing_merging_and_stopping(*lon_state, tt)
 
         for lat_traj in lat_traj_list:
             for lon_traj in lon_traj_list:
@@ -98,12 +134,17 @@ def generate_frenet_trajectory(lat_state, lon_state, opt_d):
                 fp.s2 = lon_traj['s2']
                 fp.sj = lon_traj['jerk']
 
-                d_diff = (lat_traj['d0'][-1] - opt_d)**2
+                d_diff = (lat_traj['d0'][-1] - DESIRED_LAT_POS)**2
                 lat_cost = K_J * sum(np.power(lat_traj['jerk'], 2)) + K_T * 1 + K_D * d_diff
                 fp.lat_cost = lat_cost
 
-                v_diff = (lon_traj['s1'][-1] - DESIRED_SPEED) ** 2
-                lon_cost = K_J * sum(np.power(lon_traj['jerk'], 2)) + K_T * 1 + K_S * v_diff
+                if velocity_keeping:
+                    v_diff = (lon_traj['s1'][-1] - DESIRED_SPEED) ** 2
+                    lon_cost = K_J * sum(np.power(lon_traj['jerk'], 2)) + K_T * 1 + K_S * v_diff
+                else:
+                    curr_gap = abs(lon_traj['s0'][-1] - STOP_POS)
+                    s_diff = (curr_gap - GAP)
+                    lon_cost = K_J * sum(np.power(lon_traj['jerk'], 2)) + K_T * 1 + K_S * s_diff
                 fp.lon_cost = lon_cost
 
                 fp.tot_cost = K_LAT * fp.lat_cost + K_LON * fp.lon_cost
@@ -115,7 +156,10 @@ def generate_frenet_trajectory(lat_state, lon_state, opt_d):
 
                 if opt_lon_cost > lon_cost:
                     opt_lon_cost = lon_cost
-                    opt_lon_traj = (lon_traj['s1'], lat_traj['t'])
+                    if velocity_keeping:
+                        opt_lon_traj = (lon_traj['s1'], lat_traj['t'])
+                    else:
+                        opt_lon_traj = (lon_traj['s0'], lat_traj['t'])
     
     if SHOW_OPT_LATERAL_PLOT:
         figure.show_opt_lateral_traj(opt_lat_traj)
@@ -156,7 +200,6 @@ def frenet_paths_to_world(frenet_paths, center_line_xlist, center_line_ylist, ce
 
 def check_collision(path, obstacles):
     for obstacle in obstacles:
-        is_collision = False
         obj = obstacle['object']
 
         if obstacle['type'] != 'vehicle':
@@ -171,7 +214,7 @@ def check_collision(path, obstacles):
             obs_rear_y = obj.y
             obs_front_x = obj.x + obj.WHEEL_BASE * np.cos(obj.yaw)
             obs_front_y = obj.y + obj.WHEEL_BASE * np.sin(obj.yaw)
-            gap = 0.0
+            gap = 0
 
             for x, y, yaw in zip(path.xlist, path.ylist, path.yawlist):
                 ego_rear_x, ego_rear_y = x, y
@@ -182,6 +225,7 @@ def check_collision(path, obstacles):
                 d_rf = np.hypot(ego_rear_x - obs_front_x, ego_rear_y - obs_front_y)
                 d_fr = np.hypot(ego_front_x - obs_rear_x, ego_front_y - obs_rear_y)
                 d_ff = np.hypot(ego_front_x - obs_front_x, ego_front_y - obs_front_y)
+                print(f"[DEBUG] d_rr: {d_rr}, d_rf: {d_rf}, d_fr: {d_fr}, d_ff: {d_ff}")
 
                 if (d_rr + gap < Car.BUBBLE_R + obj.BUBBLE_R or
                     d_rf + gap < Car.BUBBLE_R + obj.BUBBLE_R or
@@ -193,7 +237,6 @@ def check_collision(path, obstacles):
 def is_in_road(path, boundaries, center_line_xlist, center_line_ylist):
     frenet_boundaries = [world2frenet(0, boundery, center_line_xlist, center_line_ylist)[1] for boundery in [5.25, -5.25]]
     road_d_min, road_d_max = np.min(frenet_boundaries), np.max(frenet_boundaries)
-    print(road_d_min, road_d_max)
     for d in path.d0:
         if d <= road_d_min or road_d_max <= d:
             return False
@@ -209,7 +252,7 @@ def check_valid_path(paths, obs, road_boundaries, center_line_xlist, center_line
             continue
         elif any([abs(kappa) > K_MAX for kappa in path.kappa]):
             continue
-        elif check_collision(path, obs):
+        elif obs and check_collision(path, obs):
             continue
         elif not is_in_road(path, road_boundaries, center_line_xlist, center_line_ylist):
             continue

@@ -3,8 +3,9 @@ import numpy as np
 import random
 
 import frenet
-from sim import Simulator, generate_road
-from Car import Car
+from sim import Simulator, generate_road, spawn_frenet_npcs
+from Car import Car, StaticCar
+from config import STOP_POS
 
 '''
 TODO
@@ -16,35 +17,29 @@ TODO
     - [] stop
 '''
 
-import random
-
-def spawn_frenet_npcs(cxlist, cylist, cslist, num_npcs=7, road_length=150, lane_num=3, lane_width=3.5, min_gap=5.0):
-    npcs = []
-    slist = []
-
-    for i in range(num_npcs):
-        lane = random.randint(0, lane_num - 1)
-        d = (lane - (lane_num - 1) / 2) * lane_width
-
-        while True:
-            s = random.uniform(5, road_length)
-            if all(abs(s - s0) >= min_gap for s0 in slist):
-                break
-
-        slist.append(s)
-        x, y, yaw = frenet.frenet2world(s, d, cxlist, cylist, cslist)
-
-        npc = {
-            'type': 'vehicle',
-            'object': Car(x, y, yaw, s, d)
+def demo_static_obstacle_avoidancea_and_velocity_keeping():
+    road = generate_road(lane_num=3, lane_width=3.5, road_length=300, curved=False)
+    ego = Car(0, 3.5, 0)
+    obstacles = [
+        {
+            "type": 'static',
+            "object": StaticCar(60, 2, 0)
+        },
+        {
+            "type": 'static',
+            "object": StaticCar(90, -2, 0)
+        },
+        {
+            "type": 'static',
+            "object": StaticCar(170, 2, 0)
         }
-        npcs.append(npc)
+    ]
+    fig, ax = plt.subplots(figsize=(10,6))
+    sim = Simulator(obstacles, road, ego)
+    sim.run(ax)
+    plt.show()
 
-    npcs.sort(key=lambda car: car['object'].s)
-    return npcs
-
-
-if __name__ == "__main__":
+def demo_dynamic_obstacle_advoidance_and_curved_road_velocity_keeping():
     road = generate_road(lane_num=3, lane_width=3.5, road_length=300, curved=True)
     ego = Car(0, 0, 0)
     slist = [
@@ -52,18 +47,27 @@ if __name__ == "__main__":
         for (rx, ry) in zip(road['center_xlist'], road['center_ylist'])
     ]
     x, y, _ = frenet.frenet2world(60, 0, road['center_xlist'], road['center_ylist'], slist)
-    npc = Car(x, y, np.arcsin(np.sin(59)))
-    obstacles = [
-    #     {
-    #         "type": 'vehicle',
-    #         "object": npc
-    #     },
-    ]
+    obstacles = []
 
     for npc in spawn_frenet_npcs(road['center_xlist'], road['center_ylist'], slist):
         obstacles.append(npc)
 
     fig, ax = plt.subplots(figsize=(10,6))
     sim = Simulator(obstacles, road, ego)
-    sim.simple_example(ax)
+    sim.run(ax)
     plt.show()
+
+def demo_stopping():
+    road = generate_road(lane_num=3, lane_width=3.5, road_length=300, curved=False)
+    ego = Car(0, 0, 0)
+    fig, ax = plt.subplots(figsize=(10,6))
+    sim = Simulator(None, road, ego, False)
+    sim.run(ax)
+    ax.plot([STOP_POS, STOP_POS], [-5.25, 5.25], '-r', lw=3)
+    plt.show()
+
+
+if __name__ == "__main__":
+    demo_static_obstacle_avoidancea_and_velocity_keeping()
+    # demo_dynamic_obstacle_advoidance_and_curved_road_velocity_keeping()
+    # demo_stopping()
