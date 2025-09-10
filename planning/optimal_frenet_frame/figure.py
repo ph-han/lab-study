@@ -5,12 +5,12 @@ import config
 
 def show_coord_transformation(ego, world, center_line):
     plt.figure(4)
-    ego_x, ego_y = ego
-    world_x, world_y = world
+    # ego_x, ego_y = ego
+    # world_x, world_y = world
     center_line_xlist, center_line_ylist = center_line
 
-    plt.plot(ego_x, ego_y, 'xb')
-    plt.plot(world_x, world_y, 'xr')
+    # plt.plot(ego_x, ego_y, 'xb')
+    # plt.plot(world_x, world_y, 'xr')
     plt.plot(center_line_xlist, center_line_ylist)
     plt.axis('equal')
     plt.grid(True)

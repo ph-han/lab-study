@@ -1,6 +1,7 @@
 from math import cos, sin, tan, pi
 import numpy as np
 import matplotlib.pyplot as plt
+import random
 
 from IDM import IDMVehicle
 from config import V_MAX, ACC_MAX, DESIRED_SPEED
@@ -27,7 +28,7 @@ class StaticCar:
     MAX_STEER = np.deg2rad(40)  # rad
     SPEED = 1.0
 
-    BUBBLE_R = (WHEEL_BASE * 2) / 5
+    BUBBLE_R = (WHEEL_BASE) / 2
 
     def __init__(self, x, y, yaw):
         self.x = x
@@ -65,7 +66,7 @@ class Car:
     MAX_STEER = np.deg2rad(40)  # rad
     SPEED = 1.0
 
-    BUBBLE_R = (WHEEL_BASE * 2) / 5
+    BUBBLE_R = (WHEEL_BASE) / 2
 
     def __init__(self, x, y, yaw, s=0, d=0):
         self.x = x
@@ -74,7 +75,8 @@ class Car:
         self.d = d
         self.yaw = Car.pi_2_pi(yaw)
         self.steer = 0.0
-        self.idm = IDMVehicle(s, v=0, v0=4, a_max=ACC_MAX, s0=self.OVERALL_LENGTH, length=self.OVERALL_LENGTH)
+        v0 = random.randint(4, 15)
+        self.idm = IDMVehicle(s, v=0, v0=v0, a_max=ACC_MAX, s0=self.OVERALL_LENGTH, length=self.OVERALL_LENGTH)
 
     
     def update_state(self, npcs, cxlist, cylist, cslist, dt=0.1):

@@ -103,8 +103,8 @@ class Simulator:
         
         for o in self.obs:
             if o['type'] == 'vehicle':
-                o['object'].update_state(self.obs, self.center_line_xlist, self.center_line_ylist, self.center_line_slist, dt=0.01)
                 o['object'].draw(ax)
+                o['object'].update_state(self.obs, self.center_line_xlist, self.center_line_ylist, self.center_line_slist, dt=0.01)
             else:
                 half_width = o['object'].width / 2
                 half_height = o['object'].height / 2
@@ -130,7 +130,7 @@ class Simulator:
 
     def run(self, ax):
         s0, d0 = world2frenet(self.ego.x, self.ego.y, self.center_line_xlist, self.center_line_ylist)
-        s1, s2, d1, d2 = 0, 0, 0, 0
+        s1, s2, d1, d2 = 5, 0, 0, 0
         opt_d = 0
         lane_num = 3
         for i in range(500):
@@ -157,6 +157,8 @@ class Simulator:
             self.draw_valid_paths_and_opt_path(ax, valid_paths, opt_path)
             self.draw_obstacles(ax)
             plot_road(ax, self.road)
+            if not self.velocity_keeping:
+                ax.plot([STOP_POS, STOP_POS], [-5.25, 5.25], '-r', lw=3)
             ax.set_title(f"{lane_num}-lane Road Map | ego speed :{s1:.2f} m/s, desired speed: {DESIRED_SPEED} m/s")
             ax.set_xlim(self.ego.x - 10, self.ego.x + 40)
             plt.pause(0.1)

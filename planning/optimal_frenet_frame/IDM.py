@@ -15,7 +15,7 @@ class IDMVehicle:
         self.b_comf = b_comf  # 안락한 감속도 (m/s^2)
         self.s0 = s0  # 정지 시 최소 간격 (m)
         self.length = length  # 차량 길이 (m)
-        self.delta = 4.0  # 가속 지수
+        self.delta = 2.0  # 가속 지수
 
     def update_acceleration(self, leader=None):
         """앞차(leader) 정보를 바탕으로 자신의 가속도를 업데이트합니다."""

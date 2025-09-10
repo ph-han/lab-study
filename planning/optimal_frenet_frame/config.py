@@ -8,10 +8,10 @@ DT_0_STEP = 3.5
 
 # longitunial final state position config
 ST_0_MIN = 0
-ST_0_MAX = 10
-ST_0_STEP = 1
+ST_0_MAX = 20
+ST_0_STEP = 2
 GAP = 2
-STOP_POS = 150
+STOP_POS = 100
 
 # longitunial final state speed config
 ST_1_MIN = 0
@@ -38,7 +38,7 @@ K_T   = 0.10
 K_D   = 10.0
 K_S   = 10.0
 K_LAT = 1.0
-K_LON = 1.5
+K_LON = 1.0
 
 
 DESIRED_LAT_POS = 0
@@ -46,4 +46,4 @@ DESIRED_SPEED = 20
 DESIRED_DISTACE = 16
 V_MAX = 20
 ACC_MAX = 20
-K_MAX = 20
+K_MAX = 5

@@ -63,11 +63,10 @@ def demo_stopping():
     fig, ax = plt.subplots(figsize=(10,6))
     sim = Simulator(None, road, ego, False)
     sim.run(ax)
-    ax.plot([STOP_POS, STOP_POS], [-5.25, 5.25], '-r', lw=3)
     plt.show()
 
 
 if __name__ == "__main__":
-    demo_static_obstacle_avoidancea_and_velocity_keeping()
+    # demo_static_obstacle_avoidancea_and_velocity_keeping()
     # demo_dynamic_obstacle_advoidance_and_curved_road_velocity_keeping()
-    # demo_stopping()
+    demo_stopping()

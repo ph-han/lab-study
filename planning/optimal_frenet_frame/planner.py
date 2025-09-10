@@ -75,7 +75,7 @@ def generate_velocity_keeping(si_0, si_1, si_2, st_1, st_2, tt): # current funct
 def generate_follwing_merging_and_stopping(si_0, si_1, si_2, st_1, st_2, tt): # current function is for velocity keeping
 
     trajectories = []
-    for st_0 in np.arange(si_0 + ST_0_MIN, si_0 + ST_0_MAX + ST_0_STEP, ST_0_STEP):
+    for st_0 in np.arange(si_0 + ST_0_MIN, min(STOP_POS, si_0 + ST_0_MAX + ST_0_STEP), ST_0_STEP):
         long_traj = Quintic(si_0, si_1, si_2, st_0, st_1, st_2, tt)
 
         if SHOW_LONGITUDINAL_PLOT:
@@ -134,7 +134,7 @@ def generate_frenet_trajectory(lat_state, lon_state, opt_d, velocity_keeping=Tru
                 fp.s2 = lon_traj['s2']
                 fp.sj = lon_traj['jerk']
 
-                d_diff = (lat_traj['d0'][-1] - DESIRED_LAT_POS)**2
+                d_diff = (lat_traj['d0'][-1] - opt_d)**2
                 lat_cost = K_J * sum(np.power(lat_traj['jerk'], 2)) + K_T * 1 + K_D * d_diff
                 fp.lat_cost = lat_cost
 
@@ -142,9 +142,9 @@ def generate_frenet_trajectory(lat_state, lon_state, opt_d, velocity_keeping=Tru
                     v_diff = (lon_traj['s1'][-1] - DESIRED_SPEED) ** 2
                     lon_cost = K_J * sum(np.power(lon_traj['jerk'], 2)) + K_T * 1 + K_S * v_diff
                 else:
-                    curr_gap = abs(lon_traj['s0'][-1] - STOP_POS)
-                    s_diff = (curr_gap - GAP)
-                    lon_cost = K_J * sum(np.power(lon_traj['jerk'], 2)) + K_T * 1 + K_S * s_diff
+                    s_diff = (lon_traj['s0'][-1] - STOP_POS)**2
+                    print(s_diff, lon_traj['s0'][-1])
+                    lon_cost = K_J * sum(np.power(lon_traj['jerk'], 2)) + K_T * tt + K_S * s_diff
                 fp.lon_cost = lon_cost
 
                 fp.tot_cost = K_LAT * fp.lat_cost + K_LON * fp.lon_cost
@@ -225,7 +225,7 @@ def check_collision(path, obstacles):
                 d_rf = np.hypot(ego_rear_x - obs_front_x, ego_rear_y - obs_front_y)
                 d_fr = np.hypot(ego_front_x - obs_rear_x, ego_front_y - obs_rear_y)
                 d_ff = np.hypot(ego_front_x - obs_front_x, ego_front_y - obs_front_y)
-                print(f"[DEBUG] d_rr: {d_rr}, d_rf: {d_rf}, d_fr: {d_fr}, d_ff: {d_ff}")
+                # print(f"[DEBUG] d_rr: {d_rr}, d_rf: {d_rf}, d_fr: {d_fr}, d_ff: {d_ff}")
 
                 if (d_rr + gap < Car.BUBBLE_R + obj.BUBBLE_R or
                     d_rf + gap < Car.BUBBLE_R + obj.BUBBLE_R or
@@ -254,7 +254,7 @@ def check_valid_path(paths, obs, road_boundaries, center_line_xlist, center_line
             continue
         elif obs and check_collision(path, obs):
             continue
-        elif not is_in_road(path, road_boundaries, center_line_xlist, center_line_ylist):
+        elif road_boundaries and not is_in_road(path, road_boundaries, center_line_xlist, center_line_ylist):
             continue
         
         valid_paths.append(path)
@@ -273,21 +273,16 @@ def generate_opt_path(valid_paths):
 
 
 if __name__ == "__main__":
-    from sim import generate_road
-    road = generate_road(lane_num=3, lane_width=3.5, road_length=300, curved=True)
-    slist = [
-        world2frenet(rx, ry, road['center_xlist'], road['center_ylist'])[0] \
-        for (rx, ry) in zip(road['center_xlist'], road['center_ylist'])
-    ]
-    ego_x, ego_y = 0, -5.5
-    frenet_s, frenet_d = world2frenet(ego_x, ego_y, road['center_xlist'], road['center_ylist'])
-    world_x, world_y, _ = frenet2world(frenet_s, frenet_d, road['center_xlist'], road['center_ylist'], slist)
-    print(f"frenet coordinate (s, d): ({frenet_s}, {frenet_d})")
-    print(f"world coordinate (x, y): ({world_x}, {world_y})")
-    figure.show_coord_transformation((ego_x, ego_y), (world_x, world_y), ( road['center_xlist'], road['center_ylist']))
-    fplist = generate_frenet_trajectory((frenet_d, 1, 0, 0, 0), (frenet_s, 18, 0, 16, 0))
-    fplist = frenet_paths_to_world(fplist)
-    valid_paths = check_valid_path(fplist, None)
+    center_line_xlist = np.linspace(10, 30, 100)
+    center_line_ylist = 0.1 * (center_line_xlist**2)
+    center_line_slist = [world2frenet(rx, ry, center_line_xlist, center_line_ylist)[0] for (rx, ry) in list(zip(center_line_xlist, center_line_ylist))]
+
+    ego_x, ego_y = 10, 10
+    frenet_s, frenet_d = world2frenet(ego_x, ego_y, center_line_xlist, center_line_ylist)
+    fplist = generate_frenet_trajectory((frenet_d, 1, 0, 0, 0), (frenet_s, 18, 0, 16, 0), 2)
+    fplist = frenet_paths_to_world(fplist, center_line_xlist, center_line_ylist, center_line_slist)
+    valid_paths = check_valid_path(fplist, None, None, center_line_xlist, center_line_ylist)
+    print(valid_paths)
     generate_opt_path(valid_paths)
-    
+    figure.show_coord_transformation(None, None, (center_line_xlist, center_line_ylist))
     figure.show()
