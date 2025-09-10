@@ -75,11 +75,11 @@ def generate_velocity_keeping(si_0, si_1, si_2, st_1, st_2, tt): # current funct
 def generate_follwing_merging_and_stopping(si_0, si_1, si_2, st_1, st_2, tt): # current function is for velocity keeping
 
     trajectories = []
-    for st_0 in np.arange(si_0 + ST_0_MIN, min(STOP_POS, si_0 + ST_0_MAX + ST_0_STEP), ST_0_STEP):
+    for st_0 in np.arange(min(STOP_POS - GAP, si_0 + ST_0_MIN), min(STOP_POS - GAP, si_0 + ST_0_MAX) + ST_0_STEP, ST_0_STEP):
         long_traj = Quintic(si_0, si_1, si_2, st_0, st_1, st_2, tt)
 
         if SHOW_LONGITUDINAL_PLOT:
-            figure.show_longitudinal_traj(long_traj, st_1, tt)
+            figure.show_longitudinal_traj(long_traj, st_0, tt, False)
 
         t_list = [t for t in np.arange(0.0, tt, GEN_T_STEP)]
         s0_list = [long_traj.get_position(t) for t in t_list]
@@ -135,14 +135,14 @@ def generate_frenet_trajectory(lat_state, lon_state, opt_d, velocity_keeping=Tru
                 fp.sj = lon_traj['jerk']
 
                 d_diff = (lat_traj['d0'][-1] - opt_d)**2
-                lat_cost = K_J * sum(np.power(lat_traj['jerk'], 2)) + K_T * 1 + K_D * d_diff
+                lat_cost = K_J * sum(np.power(lat_traj['jerk'], 2)) + K_T * tt + K_D * d_diff
                 fp.lat_cost = lat_cost
 
                 if velocity_keeping:
                     v_diff = (lon_traj['s1'][-1] - DESIRED_SPEED) ** 2
-                    lon_cost = K_J * sum(np.power(lon_traj['jerk'], 2)) + K_T * 1 + K_S * v_diff
+                    lon_cost = K_J * sum(np.power(lon_traj['jerk'], 2)) + K_T * tt + K_S * v_diff
                 else:
-                    s_diff = (lon_traj['s0'][-1] - STOP_POS)**2
+                    s_diff = (lon_traj['s0'][-1] - STOP_POS + GAP)**2
                     print(s_diff, lon_traj['s0'][-1])
                     lon_cost = K_J * sum(np.power(lon_traj['jerk'], 2)) + K_T * tt + K_S * s_diff
                 fp.lon_cost = lon_cost
@@ -245,7 +245,7 @@ def is_in_road(path, boundaries, center_line_xlist, center_line_ylist):
 def check_valid_path(paths, obs, road_boundaries, center_line_xlist, center_line_ylist):
     valid_paths = []
     for path in paths:
-        acc_squared = [(abs(a_s**2 + a_d**2)) for (a_s, a_d) in zip(path.s2, path.d2)]
+        acc_squared = [(a_s**2 + a_d**2) for (a_s, a_d) in zip(path.s2, path.d2)]
         if any([v > V_MAX for v in path.s1]):
             continue
         elif any([acc > ACC_MAX**2 for acc in acc_squared]):

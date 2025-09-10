@@ -11,7 +11,7 @@ class Quintic:
         self.c012 = np.array([self.c0, self.c1, self.c2])
 
         self.m1 = np.array([
-            [1, tt, tt],
+            [1, tt, tt**2],
             [0, 1, 2*tt],
             [0, 0, 2]
         ])

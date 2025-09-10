@@ -17,6 +17,7 @@ def show_coord_transformation(ego, world, center_line):
 
 def show_lateral_traj(traj, dt_0, tt):
     plt.figure(2)
+    
     tlist = np.linspace(0, tt, 500)
     dlist = [traj.get_position(t) for t in tlist]
     if tt != config.TT_MAX:
@@ -36,6 +37,7 @@ def show_opt_lateral_traj(opt_traj):
 
 def show_longitudinal_traj(traj, st_1, tt, velocity_keeping=True):
     plt.figure(3)
+    
     tlist = np.linspace(0, tt, 500)
     if velocity_keeping:
         slist = [traj.get_velocity(t) for t in tlist]
@@ -47,7 +49,10 @@ def show_longitudinal_traj(traj, st_1, tt, velocity_keeping=True):
     plt.plot(tlist, slist, '-', color="#1E6EF4")
     plt.title("longitudinal trajectories")
     plt.xlabel('t [sec]')
-    plt.ylabel(r"$\dot{s}$ m/s")
+    if velocity_keeping:
+        plt.ylabel(r"$\dot{s}$ m/s")
+    else:
+        plt.ylabel("s [m]")
     plt.grid(True)
 
 def show_opt_longitudinal_traj(opt_traj):
