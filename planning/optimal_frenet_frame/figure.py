@@ -31,6 +31,8 @@ def show_lateral_traj(traj, dt_0, tt):
 
 def show_opt_lateral_traj(opt_traj):
     plt.figure(2)
+    if not opt_traj:
+        return
     dlist, tlist = opt_traj
     plt.plot(tlist, dlist, '-', color="#6cf483", lw=3)
     plt.grid(True)

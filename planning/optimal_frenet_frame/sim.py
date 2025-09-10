@@ -134,9 +134,10 @@ class Simulator:
         opt_d = 0
         lane_num = 3
         for i in range(500):
-            plt.figure(2).clf()
-            plt.figure(3).clf()
-            plt.figure(4).clf()
+            if SHOW_ALL_FRENET_PATH:
+                plt.figure(2).clf()
+                plt.figure(3).clf()
+                plt.figure(4).clf()
             ax.figure.canvas.mpl_connect(
                 'key_release_event',
                 lambda event: [exit(0) if event.key == 'escape' else None])

@@ -75,8 +75,14 @@ def generate_velocity_keeping(si_0, si_1, si_2, st_1, st_2, tt): # current funct
 def generate_follwing_merging_and_stopping(si_0, si_1, si_2, st_1, st_2, tt): # current function is for velocity keeping
 
     trajectories = []
-    for st_0 in np.arange(min(STOP_POS - GAP, si_0 + ST_0_MIN), min(STOP_POS - GAP, si_0 + ST_0_MAX) + ST_0_STEP, ST_0_STEP):
-        long_traj = Quintic(si_0, si_1, si_2, st_0, st_1, st_2, tt)
+    st_range = list(np.arange(si_0, min(STOP_POS - GAP, si_0 + ST_0_MAX) + ST_0_STEP, ST_0_STEP))
+    if STOP_POS - GAP not in st_range:
+        st_range.append(STOP_POS - GAP)
+    for st_0 in st_range:
+        if st_0 == STOP_POS - GAP:
+            long_traj = Quintic(si_0, si_1, si_2, st_0, st_1, st_2, tt)
+        else:
+            long_traj = Quintic(si_0, si_1, si_2, st_0, si_1, st_2, tt)
 
         if SHOW_LONGITUDINAL_PLOT:
             figure.show_longitudinal_traj(long_traj, st_0, tt, False)
@@ -143,7 +149,7 @@ def generate_frenet_trajectory(lat_state, lon_state, opt_d, velocity_keeping=Tru
                     lon_cost = K_J * sum(np.power(lon_traj['jerk'], 2)) + K_T * tt + K_S * v_diff
                 else:
                     s_diff = (lon_traj['s0'][-1] - STOP_POS + GAP)**2
-                    print(s_diff, lon_traj['s0'][-1])
+                    # print(s_diff, lon_traj['s0'][-1])
                     lon_cost = K_J * sum(np.power(lon_traj['jerk'], 2)) + K_T * tt + K_S * s_diff
                 fp.lon_cost = lon_cost
 

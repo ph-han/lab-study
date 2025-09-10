@@ -67,6 +67,6 @@ def demo_stopping():
 
 
 if __name__ == "__main__":
-    demo_static_obstacle_avoidancea_and_velocity_keeping()
+    # demo_static_obstacle_avoidancea_and_velocity_keeping()
     # demo_dynamic_obstacle_advoidance_and_curved_road_velocity_keeping()
-    # demo_stopping()
+    demo_stopping()
