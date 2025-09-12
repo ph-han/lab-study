@@ -26,9 +26,8 @@ def distance_time(axes, events):
         if type == "static":
             start_t = event_data.get('start_t', 0)
             end_t = event_data.get('end_t', 0)
-            y = np.arange(start_t, end_t + 1)
-            x = [event_data.get('begin_distance', 0)] * len(y)
-            axes.plot(x, y, '-r')
+            begin_pos = event_data.get('begin_distance', 0)
+            axes.plot((begin_pos, begin_pos), (start_t, end_t), '-r')
         elif type == "dynamic":
             p1 = (event_data['begin_distance'] - event_data['following_distance'], event_data['start_t'])
             p2 = (event_data['begin_distance'], event_data['start_t'])
@@ -139,7 +138,7 @@ class UrbanSimulator:
     def _update_path(self, frame):
         # curr_state = (self.path[0][frame], self.path[1][frame], frame // 50)
         curr_state = (0, self.path[1][frame], 0)
-        # print("curr frame: ", frame, len(self.path[1]))
+        # print("curr speed: ", self.path[1][frame])
         new_events = self.events.copy()
         for key, event in self.events.items():
             if self.events[key] and self.events[key]['start_t'] == self.events[key]['end_t']:
@@ -147,13 +146,14 @@ class UrbanSimulator:
         if len(new_events) == 0:
             new_events = {'none': None}
         self.events = new_events
+        # print(self.events)
+        # input("enter")
         new_rs, new_rv, new_rt = planning(curr_state, self.events, 13)
-        
         self.ax0.clear()
-        distance_time(self.ax0, self.events)
         draw_rs = np.array(new_rs)
         draw_rt = np.array(new_rt)
-        self.ax0.plot(draw_rs, draw_rt, '-ob')
+        self.ax0.plot(draw_rs, draw_rt, '-b')
+        distance_time(self.ax0, self.events)
         
         new_rs, new_rv, new_rt = self.upsample_data([new_rs, new_rv, new_rt], 20)
         self.path[0] = self.path[0][:frame + 1] + new_rs
@@ -175,6 +175,8 @@ class UrbanSimulator:
         self._handle_static_events(sec)
         self._update_events(frame)
         self._update_plot_view(frame, sec)
+        
+        
 
     def _draw_background(self):
         self.ax1.clear()
@@ -203,12 +205,11 @@ class UrbanSimulator:
                 continue
             if self.c_events[key]['begin_distance'] < self.ego.x + Car.FRONT_OVERHANG + Car.WHEEL_BASE:
                 del _updated_events[key]
-                print("del")
                 continue
 
             _updated_event = obs.copy()
-            _updated_event['start_t'] = max(self.c_events[key]['start_t'] - frame / 50, 0) 
-            _updated_event['end_t'] = max(self.c_events[key]['end_t'] - frame / 50, 0) 
+            _updated_event['start_t'] = max(self.events[key]['start_t'] - 0.02, 0) 
+            _updated_event['end_t'] = max(self.events[key]['end_t'] - 0.02, 0) 
             _updated_event['begin_distance'] = max(self.c_events[key]['begin_distance'] - (self.ego.x + Car.FRONT_OVERHANG + Car.WHEEL_BASE), 0)
             _updated_events[key] = _updated_event
 
@@ -275,15 +276,15 @@ class UrbanSimulator:
         self.ax1.set_ylim(-10, 10)
 
 def simulation(ego, npcs, events):
-    # path = planning([0, 0, 0], events, 30)
+    path = planning([0, 0, 0], events, 30)
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
     #
-    # distance_time(axes[0], events)
-    # axes[0].plot(path[0], path[2], '-ob')
+    distance_time(axes[0], events)
+    axes[0].plot(path[0], path[2], '-b')
 
-    simulator = UrbanSimulator(fig, axes, [[0], [0], [0]], ego, npcs, events)
+    simulator = UrbanSimulator(fig, axes, path, ego, npcs, events)
 
-    ani = FuncAnimation(fig, simulator.update, frames=3000, interval=20, repeat=False)
+    ani = FuncAnimation(fig, simulator.update, frames=1000, interval=20, repeat=False)
     plt.tight_layout()
     plt.show()
 

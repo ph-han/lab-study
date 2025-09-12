@@ -1,5 +1,7 @@
+import math
 import numpy as np
 import random
+import matplotlib.pyplot as plt
 import sim
 from Node import Node
 from Car import Car
@@ -78,20 +80,38 @@ def ccw(a, b, c):
         return 1
 
 def is_collision_static(curr, target, es):
+    # p1 = np.array([np.float64(3.7200000000000006), np.float64(3.0)])
+    # p2 = np.array([np.float64(3.960000000000001), np.float64(4.0)])
+    # p3 = np.array([4,  4.6])
+    # p4 = np.array([4, 0])
     p1 = np.array([curr.s, curr.t])
     p2 = np.array([target.s, target.t])
     p3 = np.array([es['begin_distance'], es['end_t']])
     p4 = np.array([es['begin_distance'], es['start_t']])
+    # plt.plot((p3[0], p4[0]), (p3[1], p4[1]))
+    # plt.plot((p1[0], p2[0]), (p1[1], p2[1]))
+    # plt.show()
 
-    p1p2 = ccw(p1, p2, p3) * ccw(p1, p2, p4)
-    p3p4 = ccw(p3, p4, p1) * ccw(p3, p4, p2)
+    d1 = ccw(p1, p2, p3)
+    d2 = ccw(p1, p2, p4)
+    d3 = ccw(p3, p4, p1)
+    d4 = ccw(p3, p4, p2)
 
-    if p1p2 == 0 and p3p4 == 0:
-        if p1[1] > p2[1]: p1, p2 = p2, p1
-        if p3[1] > p4[1]: p3, p4 = p4, p3
+    # 일반 교차
+    if d1 * d2 < 0 and d3 * d4 < 0:
+        return True
 
-        return p2[1] >= p3[1] and p4[1] >= p1[1]
-    return p1p2 <= 0 and p3p4 <= 0
+    # collinear(일직선) 케이스: 구간 겹침 확인
+    def on_segment(a, b, c):
+        return (min(a[0], b[0]) <= c[0] <= max(a[0], b[0]) and
+                min(a[1], b[1]) <= c[1] <= max(a[1], b[1]))
+
+    if d1 == 0 and on_segment(p1, p2, p3): return True
+    if d2 == 0 and on_segment(p1, p2, p4): return True
+    if d3 == 0 and on_segment(p3, p4, p1): return True
+    if d4 == 0 and on_segment(p3, p4, p2): return True
+
+    return False
 
 def get_desired_speed(s):
     desired_speed = [30] * 100000 # 1km 전 구간 제한 30km/h
@@ -163,17 +183,22 @@ def calc_desired_v_cost(target):
 def calc_a_cost(a):
     return abs(a)
 
-def calc_event_cost(curr, target, event):
-    if not event:
-        return 0
-    event_type = event['type']
-    cost = 0
-    if event_type == 'static':
-        cost += np.inf if is_collision_static(curr, target, event) else 0
-    else: # dynamic event
-        cost += is_collision_dynamic(target, event)
+def calc_event_cost(curr, target, events):
+    total_cost = 0
+    for event_key, event in events.items():
+        if not event:
+            continue
 
-    return cost
+        if not (event['start_t'] <= target.t <= event['end_t'] or event['start_t'] <= curr.t <= event['end_t']):
+             if not (curr.t < event['start_t'] and target.t > event['end_t']):
+                continue
+
+        if event['type'] == 'static':
+            if is_collision_static(curr, target, event):
+                return np.inf
+        elif event['type'] == 'dynamic':
+            total_cost += is_collision_dynamic(target, event)
+    return total_cost
 
 def calc_cost(curr, a, target, event):
     cv = calc_desired_v_cost(target)
@@ -184,11 +209,15 @@ def calc_cost(curr, a, target, event):
 def set_of_action():
     return [-2, -1, 0, 1]
 
-def get_grid_idx(s, t, a):
-    return t * 41 + s * 31
+def get_grid_idx(s, t, a, ds=0.5, dt=0.5):
+    s_idx = int(s / ds)
+    t_idx = int(t / dt)
+    return (s_idx, t_idx)
 
 def get_result_path(closed, g_node):
+    # plt.figure(2).clf()
     rs, rv, rt = [], [], []
+    # cost = []
 
     curr = g_node
     while curr.pidx != -1:
@@ -197,17 +226,19 @@ def get_result_path(closed, g_node):
         rs.append(curr.s)
         rv.append(curr.v)
         rt.append(curr.t)
+        # cost.append(curr.g)
         curr = closed[curr.pidx]
 
     rs.append(curr.s)
     rv.append(curr.v)
     rt.append(curr.t)
-
+    # cost.append(curr.g)
+    # plt.figure(2)
+    # plt.plot(rt[::-1], cost[::-1])
+    # plt.show()
     return rs[::-1], rv[::-1], rt[::-1]
 
 def planning(start_state, events, horizen=13):
-    for key, value in events.items():
-        print(f"{key}: {value}")
     w = 0.0
     s, v, t = start_state
     s_node = Node(s, v, t)
@@ -217,15 +248,14 @@ def planning(start_state, events, horizen=13):
     closed_set = {}
 
     open_set[get_grid_idx(s, t, 0)] = s_node
-    iter_event = iter(events)
-    curr_event_key = next(iter_event)
 
     while open_set:
         curr_id = min(open_set, key=lambda o: open_set[o].g + w * open_set[o].h)
         curr = open_set[curr_id]
 
         # print(f"current g cost; {curr.g} | {curr.s}, {curr.t}")
-        # print(f"--- {curr_event_key}")
+        # if curr_event_key in ['e1', 'e2']:
+        #     print(f"--- \n{events[curr_event_key]}")
 
         del open_set[curr_id]
         closed_set[curr_id] = curr
@@ -234,22 +264,9 @@ def planning(start_state, events, horizen=13):
         # draw.pause(0.01)
 
         if curr.t > horizen:
-            g_node.s = closed_set[curr.pidx].s
-            g_node.v = closed_set[curr.pidx].v
-            g_node.t = closed_set[curr.pidx].t
-            g_node.pidx = closed_set[curr.pidx].pidx
+            g_node = curr
             break
 
-        # print(f"{curr_id} : s, v, t = {curr.s}, {curr.v}, {curr.t} | cost = {curr.g} |event = {curr_event_key}")
-        while events.get(curr_event_key) and events[curr_event_key]['end_t'] < curr.t:
-            try:
-                curr_event_key = next(iter_event)
-                # print(f"--- {curr_event_key}")
-            except StopIteration:
-                curr_event_key = 'none'
-                events['none'] = None
-        if len(open_set) == 1:
-            print(curr_event_key)
         for a in set_of_action():
             ns, nv, nt = transition_model(curr.s, curr.v, curr.t, a)
 
@@ -261,16 +278,22 @@ def planning(start_state, events, horizen=13):
             #     continue
 
             next_node = Node(ns, nv, nt, pidx=curr_id)
-            n_g_cost = calc_cost(curr, a, next_node, events.get(curr_event_key))
+            n_g_cost = calc_cost(curr, a, next_node, events)
             next_node.g = curr.g + n_g_cost
 
-            if nidx in closed_set and closed_set[nidx].g > next_node.g:
-                del closed_set[nidx]
-
-            if nidx in open_set and open_set[nidx].g > next_node.g:
-                del open_set[nidx]
-
-            if nidx not in open_set:
+            if nidx in closed_set:
+                if closed_set[nidx].g > next_node.g:
+                    del closed_set[nidx]
+                    open_set[nidx] = next_node
+            elif nidx in open_set:
+                if open_set[nidx].g > next_node.g:
+                    open_set[nidx] = next_node
+            else:
                 open_set[nidx] = next_node
     # print(closed_set)
     return get_result_path(closed_set, g_node)
+
+
+
+if __name__ == "__main__":
+    print(is_collision_static(None, None, None))
