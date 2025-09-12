@@ -3,7 +3,7 @@ from config import *
 from frenet import *
 from frenet_path import FrenetPath
 from polynomial import Quartic, Quintic
-from Car import Car
+from obstacles import Car
 
 def generate_lateral_movement(di_0, di_1, di_2, dt_1, dt_2, tt): # current function is for high speed movement
     trajectories = []
@@ -79,7 +79,7 @@ def generate_follwing_merging_and_stopping(si_0, si_1, si_2, st_1, st_2, tt): # 
     if STOP_POS - GAP not in st_range:
         st_range.append(STOP_POS - GAP)
     for st_0 in st_range:
-        if st_0 == STOP_POS - GAP:
+        if st_0 >= STOP_POS - GAP:
             long_traj = Quintic(si_0, si_1, si_2, st_0, st_1, st_2, tt)
         else:
             long_traj = Quintic(si_0, si_1, si_2, st_0, si_1, st_2, tt)
@@ -149,8 +149,9 @@ def generate_frenet_trajectory(lat_state, lon_state, opt_d, velocity_keeping=Tru
                     lon_cost = K_J * sum(np.power(lon_traj['jerk'], 2)) + K_T * tt + K_S * v_diff
                 else:
                     s_diff = (lon_traj['s0'][-1] - STOP_POS + GAP)**2
+                    v_diff = (lon_traj['s1'][-1] - 0) ** 2
                     # print(s_diff, lon_traj['s0'][-1])
-                    lon_cost = K_J * sum(np.power(lon_traj['jerk'], 2)) + K_T * tt + K_S * s_diff
+                    lon_cost = K_J * sum(np.power(lon_traj['jerk'], 2)) + K_T * tt + K_S * (s_diff + v_diff)
                 fp.lon_cost = lon_cost
 
                 fp.tot_cost = K_LAT * fp.lat_cost + K_LON * fp.lon_cost
@@ -250,20 +251,24 @@ def is_in_road(path, boundaries, center_line_xlist, center_line_ylist):
 
 def check_valid_path(paths, obs, road_boundaries, center_line_xlist, center_line_ylist):
     valid_paths = []
+    v_out, acc_out, k_out, c_out = 0, 0, 0, 0
     for path in paths:
         acc_squared = [(a_s**2 + a_d**2) for (a_s, a_d) in zip(path.s2, path.d2)]
         if any([v > V_MAX for v in path.s1]):
+            v_out += 1
             continue
         elif any([acc > ACC_MAX**2 for acc in acc_squared]):
+            acc_out += 1
             continue
         elif any([abs(kappa) > K_MAX for kappa in path.kappa]):
+            k_out += 1
             continue
         elif obs and check_collision(path, obs):
-            continue
-        elif road_boundaries and not is_in_road(path, road_boundaries, center_line_xlist, center_line_ylist):
+            c_out += 1
             continue
         
         valid_paths.append(path)
+    # print(f"[DEBUG] v_out: {v_out}, acc_out: {acc_out}, k_out: {k_out}, c_out: {c_out}")
     if SHOW_VALID_PATH:
         for path in valid_paths:
             figure.show_frenet_valid_path_in_world(path.xlist, path.ylist)

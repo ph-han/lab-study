@@ -4,7 +4,7 @@ import random
 
 import frenet
 from sim import Simulator, generate_road, spawn_frenet_npcs
-from Car import Car, StaticCar
+from obstacles import Car, StaticCar, StaticBox
 from config import STOP_POS
 
 '''
@@ -23,7 +23,7 @@ def demo_static_obstacle_avoidancea_and_velocity_keeping():
     obstacles = [
         {
             "type": 'static',
-            "object": StaticCar(60, 2, 0)
+            "object": StaticBox(60, 3.5, 0)
         },
         {
             "type": 'static',
@@ -31,7 +31,7 @@ def demo_static_obstacle_avoidancea_and_velocity_keeping():
         },
         {
             "type": 'static',
-            "object": StaticCar(170, 2, 0)
+            "object": StaticBox(170, 3.5, 0)
         }
     ]
     fig, ax = plt.subplots(figsize=(10,6))

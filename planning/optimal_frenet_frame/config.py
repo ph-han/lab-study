@@ -15,8 +15,8 @@ STOP_POS = 60
 
 # longitunial final state speed config
 ST_1_MIN = 0
-ST_1_MAX = 20
-ST_1_STEP = 2
+ST_1_MAX = 10
+ST_1_STEP = 1
 
 # terminal time config
 TT_MIN = 1
@@ -46,4 +46,4 @@ DESIRED_SPEED = 20
 DESIRED_DISTACE = 16
 V_MAX = 20
 ACC_MAX = 4
-K_MAX = 5
+K_MAX = 3

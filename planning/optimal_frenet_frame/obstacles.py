@@ -7,28 +7,10 @@ from IDM import IDMVehicle
 from config import V_MAX, ACC_MAX, DESIRED_SPEED
 from frenet import frenet2world
 
-class StaticCar:
-    """
-    Car
-
-    The unit is in meters.
-    This model is based on the IONIQ 5.
-
-    """
+class StaticBox:
     # The unit is in meters.
-    OVERALL_LENGTH = 7
-    FRONT_OVERHANG = 0.845
-    REAR_OVERHANG = 0.79
+    OVERALL_LENGTH = 3
     OVERALL_WIDTH = 1.890
-    TRACK_WIDTH  = 1.647
-    WHEEL_BASE = 3.0
-    TR = 0.24
-    TW = 0.48
-
-    MAX_STEER = np.deg2rad(40)  # rad
-    SPEED = 1.0
-
-    BUBBLE_R = (WHEEL_BASE) / 2
 
     def __init__(self, x, y, yaw):
         self.x = x
@@ -42,16 +24,12 @@ class StaticCar:
     def pi_2_pi(angle):
         return (angle + pi) % (2 * pi) - pi
 
-
-        
-
-class Car:
+class BaseCar:
     """
     Car
 
     The unit is in meters.
     This model is based on the IONIQ 5.
-
     """
     # The unit is in meters.
     OVERALL_LENGTH = 4.635
@@ -68,6 +46,24 @@ class Car:
 
     BUBBLE_R = (WHEEL_BASE) / 2
 
+    def __init__(self, x, y, yaw):
+        self.x = x
+        self.y = y
+        self.yaw = self.pi_2_pi(yaw)
+
+    @staticmethod
+    def pi_2_pi(angle):
+        return (angle + pi) % (2 * pi) - pi
+
+class StaticCar(BaseCar):
+    OVERALL_LENGTH = 6.9 # Override for StaticCar
+    def __init__(self, x, y, yaw):
+        super().__init__(x, y, yaw)
+        self.width = self.OVERALL_WIDTH
+        self.height = self.OVERALL_LENGTH
+
+
+class Car(BaseCar):
     def __init__(self, x, y, yaw, s=0, d=0):
         self.x = x
         self.y = y
@@ -78,7 +74,6 @@ class Car:
         # v0 = random.randint(4, 15)
         self.idm = IDMVehicle(s, v=0, v0=6, a_max=ACC_MAX, s0=self.OVERALL_LENGTH, length=self.OVERALL_LENGTH)
 
-    
     def update_state(self, npcs, cxlist, cylist, cslist, dt=0.1):
         # s좌표 기준 정렬
         npcs.sort(key=lambda car: car['object'].s)
@@ -99,10 +94,6 @@ class Car:
             self.idm.update_state()
         self.x, self.y, self.yaw = frenet2world(self.idm.get_s(), self.d, cxlist, cylist, cslist)
        
-
-    @staticmethod
-    def pi_2_pi(angle):
-        return (angle + pi) % (2 * pi) - pi
 
     @staticmethod
     def action(x, y, yaw, steer_angle, speed=1.0):
@@ -183,5 +174,3 @@ class Car:
         circle2 = plt.Circle((self.x + Car.WHEEL_BASE * np.cos(self.yaw), self.y + Car.WHEEL_BASE * np.sin(self.yaw)), self.BUBBLE_R, fill=False, color="blue")
         ax.add_artist(circle2)
         
-
-

@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import planner
 from frenet import *
 from config import *
-from Car import Car
+from obstacles import Car
 
 def spawn_frenet_npcs(cxlist, cylist, cslist, num_npcs=7, road_length=80, lane_num=3, lane_width=3.5, min_gap=5.0):
     npcs = []
@@ -142,7 +142,9 @@ class Simulator:
                 'key_release_event',
                 lambda event: [exit(0) if event.key == 'escape' else None])
             fplist = planner.generate_frenet_trajectory((d0, d1, d2, 0, 0), (s0, s1, s2, 0, 0), opt_d, self.velocity_keeping)
+            # print(f"total path1: {len(fplist)}")
             fplist = planner.frenet_paths_to_world(fplist, self.center_line_xlist, self.center_line_ylist, self.center_line_slist)
+            # print(f"total path2: {len(fplist)}")
             valid_paths = planner.check_valid_path(fplist, self.obs, self.road['boundaries'], self.center_line_xlist, self.center_line_ylist)
             opt_path = planner.generate_opt_path(valid_paths)
             if not opt_path:
