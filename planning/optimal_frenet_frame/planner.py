@@ -75,7 +75,7 @@ def generate_velocity_keeping(si_0, si_1, si_2, st_1, st_2, tt): # current funct
 def generate_follwing_merging_and_stopping(si_0, si_1, si_2, st_1, st_2, tt): # current function is for velocity keeping
 
     trajectories = []
-    st_range = list(np.arange(si_0, min(STOP_POS - GAP, si_0 + ST_0_MAX) + ST_0_STEP, ST_0_STEP))
+    st_range = list(np.arange(min(STOP_POS - GAP, si_0 + ST_0_MIN), min(STOP_POS - GAP, si_0 + ST_0_MAX) + ST_0_STEP, ST_0_STEP))
     if STOP_POS - GAP not in st_range:
         st_range.append(STOP_POS - GAP)
     for st_0 in st_range:
@@ -241,6 +241,13 @@ def check_collision(path, obstacles):
                     return True
     return False
 
+def check_go_back(path):
+    for i in range(len(path.xlist) - 1):
+        dx = path.xlist[i + 1] - path.xlist[i]
+        if dx < 0:
+            return True
+    return False
+
 def is_in_road(path, boundaries, center_line_xlist, center_line_ylist):
     frenet_boundaries = [world2frenet(0, boundery, center_line_xlist, center_line_ylist)[1] for boundery in [5.25, -5.25]]
     road_d_min, road_d_max = np.min(frenet_boundaries), np.max(frenet_boundaries)
@@ -251,24 +258,20 @@ def is_in_road(path, boundaries, center_line_xlist, center_line_ylist):
 
 def check_valid_path(paths, obs, road_boundaries, center_line_xlist, center_line_ylist):
     valid_paths = []
-    v_out, acc_out, k_out, c_out = 0, 0, 0, 0
     for path in paths:
         acc_squared = [(a_s**2 + a_d**2) for (a_s, a_d) in zip(path.s2, path.d2)]
         if any([v > V_MAX for v in path.s1]):
-            v_out += 1
             continue
         elif any([acc > ACC_MAX**2 for acc in acc_squared]):
-            acc_out += 1
             continue
         elif any([abs(kappa) > K_MAX for kappa in path.kappa]):
-            k_out += 1
+            continue
+        elif check_go_back(path):
             continue
         elif obs and check_collision(path, obs):
-            c_out += 1
             continue
         
         valid_paths.append(path)
-    # print(f"[DEBUG] v_out: {v_out}, acc_out: {acc_out}, k_out: {k_out}, c_out: {c_out}")
     if SHOW_VALID_PATH:
         for path in valid_paths:
             figure.show_frenet_valid_path_in_world(path.xlist, path.ylist)

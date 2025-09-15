@@ -14,8 +14,8 @@ GAP = 4
 STOP_POS = 60
 
 # longitunial final state speed config
-ST_1_MIN = 0
-ST_1_MAX = 10
+ST_1_MIN = -3
+ST_1_MAX = 3
 ST_1_STEP = 1
 
 # terminal time config
@@ -24,13 +24,13 @@ TT_MAX = 3
 TT_STEP = 0.5
 
 # plot config
-SHOW_LATERAL_PLOT = False
-SHOW_OPT_LATERAL_PLOT = False
-SHOW_LONGITUDINAL_PLOT = False
-SHOW_OPT_LONGITUDINAL_PLOT = False
-SHOW_ALL_FRENET_PATH = False
-SHOW_OPT_PATH = False
-SHOW_VALID_PATH = False
+SHOW_LATERAL_PLOT = True
+SHOW_OPT_LATERAL_PLOT = True
+SHOW_LONGITUDINAL_PLOT = True
+SHOW_OPT_LONGITUDINAL_PLOT = True
+SHOW_ALL_FRENET_PATH = True
+SHOW_OPT_PATH = True
+SHOW_VALID_PATH = True
 
 # cost config
 K_J   = 0.01
