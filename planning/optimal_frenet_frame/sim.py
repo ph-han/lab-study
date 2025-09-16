@@ -10,8 +10,8 @@ from obstacles import Car
 def spawn_frenet_npcs(cxlist, cylist, cslist, num_npcs=7, road_length=80, lane_num=3, lane_width=3.5, min_gap=5.0):
     npcs = []
     slist = []
-    
-    random.seed(62)
+
+    random.seed(429)
     for i in range(num_npcs):
         lane = random.randint(0, lane_num - 1)
         d = (lane - (lane_num - 1) / 2) * lane_width
@@ -131,7 +131,7 @@ class Simulator:
 
     def run(self, ax):
         s0, d0 = world2frenet(self.ego.x, self.ego.y, self.center_line_xlist, self.center_line_ylist)
-        s1, s2, d1, d2 = 0, 0, 0, 0
+        s1, s2, d1, d2 = 2, 0, 0, 0
         opt_d = 0
         lane_num = 3
         for i in range(500):

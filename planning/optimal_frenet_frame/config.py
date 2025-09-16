@@ -19,8 +19,8 @@ ST_1_MAX = 3
 ST_1_STEP = 1
 
 # terminal time config
-TT_MIN = 1
-TT_MAX = 3
+TT_MIN = 3
+TT_MAX = 6
 TT_STEP = 0.5
 
 # plot config
@@ -33,16 +33,16 @@ SHOW_OPT_PATH = True
 SHOW_VALID_PATH = True
 
 # cost config
-K_J   = 0.01
+K_J   = 0.1
 K_T   = 0.10
-K_D   = 10.0
-K_S   = 10.0
+K_D   = 1.0
+K_S   = 1.0
 K_LAT = 1.0
 K_LON = 1.0
 
 
 DESIRED_LAT_POS = 0
-DESIRED_SPEED = 20
+DESIRED_SPEED = 5
 DESIRED_DISTACE = 16
 V_MAX = 20
 ACC_MAX = 4

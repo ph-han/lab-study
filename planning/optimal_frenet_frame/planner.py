@@ -41,7 +41,7 @@ def generate_lateral_movement(di_0, di_1, di_2, dt_1, dt_2, tt): # current funct
 def generate_velocity_keeping(si_0, si_1, si_2, st_1, st_2, tt): # current function is for velocity keeping
 
     trajectories = []
-    for st_1 in np.arange(ST_1_MIN, ST_1_MAX + ST_1_STEP, ST_1_STEP):
+    for st_1 in np.arange(DESIRED_SPEED + ST_1_MIN, DESIRED_SPEED + ST_1_MAX + ST_1_STEP, ST_1_STEP):
         long_traj = Quartic(si_0, si_1, si_2, st_1, st_2, tt)
 
         if SHOW_LONGITUDINAL_PLOT:
@@ -263,6 +263,7 @@ def check_valid_path(paths, obs, road_boundaries, center_line_xlist, center_line
         if any([v > V_MAX for v in path.s1]):
             continue
         elif any([acc > ACC_MAX**2 for acc in acc_squared]):
+            print(f"acc over: {acc_squared}, {ACC_MAX**2}")
             continue
         elif any([abs(kappa) > K_MAX for kappa in path.kappa]):
             continue
