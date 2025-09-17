@@ -11,7 +11,7 @@ def spawn_frenet_npcs(cxlist, cylist, cslist, num_npcs=7, road_length=80, lane_n
     npcs = []
     slist = []
 
-    random.seed(429)
+    random.seed(57)
     for i in range(num_npcs):
         lane = random.randint(0, lane_num - 1)
         d = (lane - (lane_num - 1) / 2) * lane_width
@@ -131,7 +131,7 @@ class Simulator:
 
     def run(self, ax):
         s0, d0 = world2frenet(self.ego.x, self.ego.y, self.center_line_xlist, self.center_line_ylist)
-        s1, s2, d1, d2 = 2, 0, 0, 0
+        s1, s2, d1, d2 = 0, 0, 0, 0
         opt_d = 0
         lane_num = 3
         for i in range(500):
@@ -139,18 +139,15 @@ class Simulator:
                 plt.figure(2).clf()
                 plt.figure(3).clf()
                 plt.figure(4).clf()
-            ax.figure.canvas.mpl_connect(
-                'key_release_event',
-                lambda event: [exit(0) if event.key == 'escape' else None])
+            
             fplist = planner.generate_frenet_trajectory((d0, d1, d2, 0, 0), (s0, s1, s2, 0, 0), opt_d, self.velocity_keeping)
-            # print(f"total path1: {len(fplist)}")
             fplist = planner.frenet_paths_to_world(fplist, self.center_line_xlist, self.center_line_ylist, self.center_line_slist)
-            # print(f"total path2: {len(fplist)}")
             valid_paths = planner.check_valid_path(fplist, self.obs, self.road['boundaries'], self.center_line_xlist, self.center_line_ylist)
             opt_path = planner.generate_opt_path(valid_paths)
             if not opt_path:
                 print(f"{i} step error no path!")
                 break
+
             s0 = opt_path.s0[1]
             s1 = opt_path.s1[1]
             s2 = opt_path.s2[1]
@@ -158,8 +155,11 @@ class Simulator:
             d1 = opt_path.d1[1]
             d2 = opt_path.d2[1]
             opt_d = opt_path.d0[1]
+
+            ax.figure.canvas.mpl_connect(
+                'key_release_event',
+                lambda event: [exit(0) if event.key == 'escape' else None])
             ax.cla()
-            
             self.ego.x, self.ego.y, self.ego.yaw = opt_path.xlist[0], opt_path.ylist[0], opt_path.yawlist[0]
             self.ego.draw(ax)
             self.draw_valid_paths_and_opt_path(ax, valid_paths, opt_path)
@@ -167,8 +167,8 @@ class Simulator:
             plot_road(ax, self.road)
             if not self.velocity_keeping:
                 ax.plot([STOP_POS, STOP_POS], [-5.25, 5.25], '-r', lw=3)
-            ax.set_title(f"{lane_num}-lane Road Map | ego speed :{s1:.2f} m/s, desired speed: {DESIRED_SPEED} m/s")
-            ax.set_xlim(self.ego.x - 10, self.ego.x + 40)
+            ax.set_title(f"{lane_num}-lane Road Map | ego speed :{s1:.2f} m/s, desired speed: {FINAL_DESIRED_SPEED} m/s")
+            ax.set_xlim(self.ego.x - 10, self.ego.x + 60)
             plt.pause(0.1)
             # input("test: ")
 

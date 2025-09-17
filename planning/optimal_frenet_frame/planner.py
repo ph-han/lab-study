@@ -5,13 +5,13 @@ from frenet_path import FrenetPath
 from polynomial import Quartic, Quintic
 from obstacles import Car
 
-def generate_lateral_movement(di_0, di_1, di_2, dt_1, dt_2, tt): # current function is for high speed movement
+def generate_lateral_movement(di_0, di_1, di_2, dt_1, dt_2, tt, tt_max): # current function is for high speed movement
     trajectories = []
     for dt_0 in np.arange(DT_0_MIN, DT_0_MAX + DT_0_STEP, DT_0_STEP):
         lat_traj = Quintic(di_0, di_1, di_2, dt_0, dt_1, dt_2, tt)
         
         if SHOW_LATERAL_PLOT:
-            figure.show_lateral_traj(lat_traj, dt_0, tt)
+            figure.show_lateral_traj(lat_traj, dt_0, tt, tt_max)
 
         t_list = [t for t in np.arange(0.0, tt, GEN_T_STEP)]
         d0_list = [lat_traj.get_position(t) for t in t_list]
@@ -19,7 +19,7 @@ def generate_lateral_movement(di_0, di_1, di_2, dt_1, dt_2, tt): # current funct
         d2_list = [lat_traj.get_acceleration(t) for t in t_list]
         dj_list = [lat_traj.get_jerk(t) for t in t_list]
 
-        for t in np.arange(tt, TT_MAX + GEN_T_STEP, GEN_T_STEP):
+        for t in np.arange(tt, tt_max + GEN_T_STEP, GEN_T_STEP):
             t_list.append(t)
             d0_list.append(d0_list[-1])
             d1_list.append(d1_list[-1])
@@ -38,14 +38,14 @@ def generate_lateral_movement(di_0, di_1, di_2, dt_1, dt_2, tt): # current funct
     return trajectories
 
 
-def generate_velocity_keeping(si_0, si_1, si_2, st_1, st_2, tt): # current function is for velocity keeping
+def generate_velocity_keeping_lon_traj(si_0, si_1, si_2, st_1, st_2, tt, tt_max, desired_speed): # current function is for velocity keeping
 
     trajectories = []
-    for st_1 in np.arange(DESIRED_SPEED + ST_1_MIN, DESIRED_SPEED + ST_1_MAX + ST_1_STEP, ST_1_STEP):
+    for st_1 in np.arange(desired_speed + ST_1_MIN, desired_speed + ST_1_MAX + ST_1_STEP, ST_1_STEP):
         long_traj = Quartic(si_0, si_1, si_2, st_1, st_2, tt)
 
         if SHOW_LONGITUDINAL_PLOT:
-            figure.show_longitudinal_traj(long_traj, st_1, tt)
+            figure.show_longitudinal_traj(long_traj, st_1, tt, tt_max)
 
         t_list = [t for t in np.arange(0.0, tt, GEN_T_STEP)]
         s0_list = [long_traj.get_position(t) for t in t_list]
@@ -53,7 +53,7 @@ def generate_velocity_keeping(si_0, si_1, si_2, st_1, st_2, tt): # current funct
         s2_list = [long_traj.get_acceleration(t) for t in t_list]
         sj_list = [long_traj.get_jerk(t) for t in t_list]
 
-        for t in np.arange(tt, TT_MAX + GEN_T_STEP, GEN_T_STEP):
+        for t in np.arange(tt, tt_max + GEN_T_STEP, GEN_T_STEP):
             t_list.append(t)
             _s = s0_list[-1] + s1_list[-1] * GEN_T_STEP
             s0_list.append(_s)
@@ -72,43 +72,38 @@ def generate_velocity_keeping(si_0, si_1, si_2, st_1, st_2, tt): # current funct
         trajectories.append(generated_traj)
     return trajectories
 
-def generate_follwing_merging_and_stopping(si_0, si_1, si_2, st_1, st_2, tt): # current function is for velocity keeping
+def generate_stopping_lon_traj(si_0, si_1, si_2, st_1, st_2, tt, tt_max): # current function is for velocity keeping
 
     trajectories = []
-    st_range = list(np.arange(min(STOP_POS - GAP, si_0 + ST_0_MIN), min(STOP_POS - GAP, si_0 + ST_0_MAX) + ST_0_STEP, ST_0_STEP))
-    if STOP_POS - GAP not in st_range:
-        st_range.append(STOP_POS - GAP)
-    for st_0 in st_range:
-        if st_0 >= STOP_POS - GAP:
-            long_traj = Quintic(si_0, si_1, si_2, st_0, st_1, st_2, tt)
-        else:
-            long_traj = Quintic(si_0, si_1, si_2, st_0, si_1, st_2, tt)
 
-        if SHOW_LONGITUDINAL_PLOT:
-            figure.show_longitudinal_traj(long_traj, st_0, tt, False)
+    st_0 = STOP_POS - GAP
+    long_traj = Quintic(si_0, si_1, si_2, st_0, st_1, st_2, tt)
 
-        t_list = [t for t in np.arange(0.0, tt, GEN_T_STEP)]
-        s0_list = [long_traj.get_position(t) for t in t_list]
-        s1_list = [long_traj.get_velocity(t) for t in t_list]
-        s2_list = [long_traj.get_acceleration(t) for t in t_list]
-        sj_list = [long_traj.get_jerk(t) for t in t_list]
+    if SHOW_LONGITUDINAL_PLOT:
+        figure.show_longitudinal_traj(long_traj, st_0, tt, tt_max, False)
 
-        for t in np.arange(tt, TT_MAX + GEN_T_STEP, GEN_T_STEP):
-            t_list.append(t)
-            s0_list.append(s0_list[-1])
-            s1_list.append(s1_list[-1])
-            s2_list.append(s2_list[-1])
-            sj_list.append(sj_list[-1])
+    t_list = [t for t in np.arange(0.0, tt, GEN_T_STEP)]
+    s0_list = [long_traj.get_position(t) for t in t_list]
+    s1_list = [long_traj.get_velocity(t) for t in t_list]
+    s2_list = [long_traj.get_acceleration(t) for t in t_list]
+    sj_list = [long_traj.get_jerk(t) for t in t_list]
 
-        generated_traj = {
-            't': t_list,
-            's0': s0_list,
-            's1': s1_list,
-            's2': s2_list,
-            'jerk': sj_list
+    for t in np.arange(tt, tt_max + GEN_T_STEP, GEN_T_STEP):
+        t_list.append(t)
+        s0_list.append(s0_list[-1])
+        s1_list.append(s1_list[-1])
+        s2_list.append(s2_list[-1])
+        sj_list.append(sj_list[-1])
 
-        }
-        trajectories.append(generated_traj)
+    generated_traj = {
+        't': t_list,
+        's0': s0_list,
+        's1': s1_list,
+        's2': s2_list,
+        'jerk': sj_list
+
+    }
+    trajectories.append(generated_traj)
     return trajectories
 
 def generate_frenet_trajectory(lat_state, lon_state, opt_d, velocity_keeping=True):
@@ -118,12 +113,12 @@ def generate_frenet_trajectory(lat_state, lon_state, opt_d, velocity_keeping=Tru
     opt_lon_traj = None
     opt_lat_cost = np.inf
     opt_lat_traj = None
-    for tt in np.arange(TT_MIN, TT_MAX + TT_STEP, TT_STEP):
-        lat_traj_list = generate_lateral_movement(*lat_state, tt)
-        if velocity_keeping:
-            lon_traj_list = generate_velocity_keeping(*lon_state, tt)
-        else:
-            lon_traj_list = generate_follwing_merging_and_stopping(*lon_state, tt)
+
+    desired_speed = min(DESIRED_SPEED + (lon_state[1] // 5) * 5, FINAL_DESIRED_SPEED)
+    # generated velocity keeping trajectories
+    for tt in np.arange(V_KEEP_TT_MIN, V_KEEP_TT_MAX + TT_STEP, TT_STEP):
+        lat_traj_list = generate_lateral_movement(*lat_state, tt, V_KEEP_TT_MAX)
+        lon_traj_list = generate_velocity_keeping_lon_traj(*lon_state, tt, V_KEEP_TT_MAX, desired_speed)
 
         for lat_traj in lat_traj_list:
             for lon_traj in lon_traj_list:
@@ -144,14 +139,9 @@ def generate_frenet_trajectory(lat_state, lon_state, opt_d, velocity_keeping=Tru
                 lat_cost = K_J * sum(np.power(lat_traj['jerk'], 2)) + K_T * tt + K_D * d_diff
                 fp.lat_cost = lat_cost
 
-                if velocity_keeping:
-                    v_diff = (lon_traj['s1'][-1] - DESIRED_SPEED) ** 2
-                    lon_cost = K_J * sum(np.power(lon_traj['jerk'], 2)) + K_T * tt + K_S * v_diff
-                else:
-                    s_diff = (lon_traj['s0'][-1] - STOP_POS + GAP)**2
-                    v_diff = (lon_traj['s1'][-1] - 0) ** 2
-                    # print(s_diff, lon_traj['s0'][-1])
-                    lon_cost = K_J * sum(np.power(lon_traj['jerk'], 2)) + K_T * tt + K_S * (s_diff + v_diff)
+                v_diff = (lon_traj['s1'][-1] - FINAL_DESIRED_SPEED) ** 2
+                lon_cost = K_J * sum(np.power(lon_traj['jerk'], 2)) + K_T * tt + K_S * v_diff
+
                 fp.lon_cost = lon_cost
 
                 fp.tot_cost = K_LAT * fp.lat_cost + K_LON * fp.lon_cost
@@ -163,10 +153,7 @@ def generate_frenet_trajectory(lat_state, lon_state, opt_d, velocity_keeping=Tru
 
                 if opt_lon_cost > lon_cost:
                     opt_lon_cost = lon_cost
-                    if velocity_keeping:
-                        opt_lon_traj = (lon_traj['s1'], lat_traj['t'])
-                    else:
-                        opt_lon_traj = (lon_traj['s0'], lat_traj['t'])
+                    opt_lon_traj = (lon_traj['s1'], lat_traj['t'])
     
     if SHOW_OPT_LATERAL_PLOT:
         figure.show_opt_lateral_traj(opt_lat_traj)
@@ -232,7 +219,6 @@ def check_collision(path, obstacles):
                 d_rf = np.hypot(ego_rear_x - obs_front_x, ego_rear_y - obs_front_y)
                 d_fr = np.hypot(ego_front_x - obs_rear_x, ego_front_y - obs_rear_y)
                 d_ff = np.hypot(ego_front_x - obs_front_x, ego_front_y - obs_front_y)
-                # print(f"[DEBUG] d_rr: {d_rr}, d_rf: {d_rf}, d_fr: {d_fr}, d_ff: {d_ff}")
 
                 if (d_rr + gap < Car.BUBBLE_R + obj.BUBBLE_R or
                     d_rf + gap < Car.BUBBLE_R + obj.BUBBLE_R or
@@ -263,7 +249,6 @@ def check_valid_path(paths, obs, road_boundaries, center_line_xlist, center_line
         if any([v > V_MAX for v in path.s1]):
             continue
         elif any([acc > ACC_MAX**2 for acc in acc_squared]):
-            print(f"acc over: {acc_squared}, {ACC_MAX**2}")
             continue
         elif any([abs(kappa) > K_MAX for kappa in path.kappa]):
             continue
@@ -301,3 +286,47 @@ if __name__ == "__main__":
     generate_opt_path(valid_paths)
     figure.show_coord_transformation(None, None, (center_line_xlist, center_line_ylist))
     figure.show()
+
+
+
+'''
+# generated stopping trajectories
+        for tt in np.arange(STOP_TT_MIN, STOP_TT_MAX + TT_STEP, TT_STEP):
+            lat_traj_list = generate_lateral_movement(*lat_state, tt, STOP_TT_MAX)
+            lon_traj_list = generate_stopping_lon_traj(*lon_state, tt, STOP_TT_MAX)
+
+            for lat_traj in lat_traj_list:
+                for lon_traj in lon_traj_list:
+                    fp = FrenetPath()
+
+                    fp.t = lat_traj['t']
+                    fp.d0 = lat_traj['d0']
+                    fp.d1 = lat_traj['d1']
+                    fp.d2 = lat_traj['d2']
+                    fp.dj = lat_traj['jerk']
+
+                    fp.s0 = lon_traj['s0']
+                    fp.s1 = lon_traj['s1']
+                    fp.s2 = lon_traj['s2']
+                    fp.sj = lon_traj['jerk']
+
+                    d_diff = (lat_traj['d0'][-1] - opt_d)**2
+                    lat_cost = K_J * sum(np.power(lat_traj['jerk'], 2)) + K_T * tt + K_D * d_diff
+                    fp.lat_cost = lat_cost
+
+                    s_diff = (lon_traj['s0'][-1] - STOP_POS + GAP)**2
+                    v_diff = (lon_traj['s1'][-1] - 0) ** 2
+                    lon_cost = K_J * sum(np.power(lon_traj['jerk'], 2)) + K_T * tt + K_S * (s_diff + v_diff)
+                    fp.lon_cost = lon_cost
+
+                    fp.tot_cost = K_LAT * fp.lat_cost + K_LON * fp.lon_cost
+                    frenet_paths.append(fp)
+
+                    if opt_lat_cost > lat_cost:
+                        opt_lat_cost = lat_cost
+                        opt_lat_traj = (lat_traj['d0'], lat_traj['t'])
+
+                    if opt_lon_cost > lon_cost:
+                        opt_lon_cost = lon_cost
+                        opt_lon_traj = (lon_traj['s0'], lat_traj['t'])
+'''
