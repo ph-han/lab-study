@@ -140,7 +140,7 @@ class Simulator:
                 plt.figure(3).clf()
                 plt.figure(4).clf()
             
-            fplist = planner.generate_frenet_trajectory((d0, d1, d2, 0, 0), (s0, s1, s2, 0, 0), opt_d, self.velocity_keeping)
+            fplist = planner.generate_frenet_trajectory((d0, d1, d2, 0, 0), (s0, s1, s2, 0, 0), opt_d)
             fplist = planner.frenet_paths_to_world(fplist, self.center_line_xlist, self.center_line_ylist, self.center_line_slist)
             valid_paths = planner.check_valid_path(fplist, self.obs, self.road['boundaries'], self.center_line_xlist, self.center_line_ylist)
             opt_path = planner.generate_opt_path(valid_paths)
@@ -165,8 +165,7 @@ class Simulator:
             self.draw_valid_paths_and_opt_path(ax, valid_paths, opt_path)
             self.draw_obstacles(ax)
             plot_road(ax, self.road)
-            if not self.velocity_keeping:
-                ax.plot([STOP_POS, STOP_POS], [-5.25, 5.25], '-r', lw=3)
+            ax.plot([STOP_POS, STOP_POS], [-5.25, 5.25], '-r', lw=3)
             ax.set_title(f"{lane_num}-lane Road Map | ego speed :{s1:.2f} m/s, desired speed: {FINAL_DESIRED_SPEED} m/s")
             ax.set_xlim(self.ego.x - 10, self.ego.x + 60)
             plt.pause(0.1)

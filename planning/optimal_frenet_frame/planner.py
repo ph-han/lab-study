@@ -1,3 +1,4 @@
+import bisect
 import figure
 from config import *
 from frenet import *
@@ -5,9 +6,9 @@ from frenet_path import FrenetPath
 from polynomial import Quartic, Quintic
 from obstacles import Car
 
-def generate_lateral_movement(di_0, di_1, di_2, dt_1, dt_2, tt, tt_max): # current function is for high speed movement
+def generate_lateral_movement(di_0, di_1, di_2, dt_1, dt_2, tt, tt_max, dt_0_candidates):
     trajectories = []
-    for dt_0 in np.arange(DT_0_MIN, DT_0_MAX + DT_0_STEP, DT_0_STEP):
+    for dt_0 in dt_0_candidates:
         lat_traj = Quintic(di_0, di_1, di_2, dt_0, dt_1, dt_2, tt)
         
         if SHOW_LATERAL_PLOT:
@@ -38,10 +39,10 @@ def generate_lateral_movement(di_0, di_1, di_2, dt_1, dt_2, tt, tt_max): # curre
     return trajectories
 
 
-def generate_velocity_keeping_lon_traj(si_0, si_1, si_2, st_1, st_2, tt, tt_max, desired_speed): # current function is for velocity keeping
+def generate_longitudinal_movement_using_quartic(si_0, si_1, si_2, st_2, tt, tt_max, st_1_candidates):
 
     trajectories = []
-    for st_1 in np.arange(desired_speed + ST_1_MIN, desired_speed + ST_1_MAX + ST_1_STEP, ST_1_STEP):
+    for st_1 in st_1_candidates:
         long_traj = Quartic(si_0, si_1, si_2, st_1, st_2, tt)
 
         if SHOW_LONGITUDINAL_PLOT:
@@ -72,41 +73,41 @@ def generate_velocity_keeping_lon_traj(si_0, si_1, si_2, st_1, st_2, tt, tt_max,
         trajectories.append(generated_traj)
     return trajectories
 
-def generate_stopping_lon_traj(si_0, si_1, si_2, st_1, st_2, tt, tt_max): # current function is for velocity keeping
+def generate_longitudinal_movement_using_quintic(si_0, si_1, si_2, st_1, st_2, tt, tt_max, st_0_candidates):
 
     trajectories = []
 
-    st_0 = STOP_POS - GAP
-    long_traj = Quintic(si_0, si_1, si_2, st_0, st_1, st_2, tt)
+    for st_0 in st_0_candidates:
+        long_traj = Quintic(si_0, si_1, si_2, st_0, st_1, st_2, tt)
 
-    if SHOW_LONGITUDINAL_PLOT:
-        figure.show_longitudinal_traj(long_traj, st_0, tt, tt_max, False)
+        if SHOW_LONGITUDINAL_PLOT:
+            figure.show_longitudinal_traj(long_traj, st_0, tt, tt_max, False)
 
-    t_list = [t for t in np.arange(0.0, tt, GEN_T_STEP)]
-    s0_list = [long_traj.get_position(t) for t in t_list]
-    s1_list = [long_traj.get_velocity(t) for t in t_list]
-    s2_list = [long_traj.get_acceleration(t) for t in t_list]
-    sj_list = [long_traj.get_jerk(t) for t in t_list]
+        t_list = [t for t in np.arange(0.0, tt, GEN_T_STEP)]
+        s0_list = [long_traj.get_position(t) for t in t_list]
+        s1_list = [long_traj.get_velocity(t) for t in t_list]
+        s2_list = [long_traj.get_acceleration(t) for t in t_list]
+        sj_list = [long_traj.get_jerk(t) for t in t_list]
 
-    for t in np.arange(tt, tt_max + GEN_T_STEP, GEN_T_STEP):
-        t_list.append(t)
-        s0_list.append(s0_list[-1])
-        s1_list.append(s1_list[-1])
-        s2_list.append(s2_list[-1])
-        sj_list.append(sj_list[-1])
+        for t in np.arange(tt, tt_max + GEN_T_STEP, GEN_T_STEP):
+            t_list.append(t)
+            s0_list.append(s0_list[-1])
+            s1_list.append(s1_list[-1])
+            s2_list.append(s2_list[-1])
+            sj_list.append(sj_list[-1])
 
-    generated_traj = {
-        't': t_list,
-        's0': s0_list,
-        's1': s1_list,
-        's2': s2_list,
-        'jerk': sj_list
+        generated_traj = {
+            't': t_list,
+            's0': s0_list,
+            's1': s1_list,
+            's2': s2_list,
+            'jerk': sj_list
 
-    }
-    trajectories.append(generated_traj)
+        }
+        trajectories.append(generated_traj)
     return trajectories
 
-def generate_frenet_trajectory(lat_state, lon_state, opt_d, velocity_keeping=True):
+def generate_velocity_keeping_trajectory_in_frenet(lat_state, lon_state, opt_d, desired_speed):
     frenet_paths = []
 
     opt_lon_cost = np.inf
@@ -114,11 +115,14 @@ def generate_frenet_trajectory(lat_state, lon_state, opt_d, velocity_keeping=Tru
     opt_lat_cost = np.inf
     opt_lat_traj = None
 
-    desired_speed = min(DESIRED_SPEED + (lon_state[1] // 5) * 5, FINAL_DESIRED_SPEED)
-    # generated velocity keeping trajectories
+    desired_speed_list = sorted(set(np.arange(1, desired_speed + 5, 5)) | {desired_speed})
+    curr_desired_speed_idx = bisect.bisect_left(desired_speed_list, lon_state[1])
+    curr_desired_speed = desired_speed_list[curr_desired_speed_idx]
+    dt_0_candidates = [DT_0_MIN, 0, DT_0_MAX]
+    st_1_candidates = np.arange(curr_desired_speed + ST_1_MIN, curr_desired_speed + ST_1_MAX + ST_1_STEP, ST_1_STEP)
     for tt in np.arange(V_KEEP_TT_MIN, V_KEEP_TT_MAX + TT_STEP, TT_STEP):
-        lat_traj_list = generate_lateral_movement(*lat_state, tt, V_KEEP_TT_MAX)
-        lon_traj_list = generate_velocity_keeping_lon_traj(*lon_state, tt, V_KEEP_TT_MAX, desired_speed)
+        lat_traj_list = generate_lateral_movement(*lat_state, tt, V_KEEP_TT_MAX, dt_0_candidates)
+        lon_traj_list = generate_longitudinal_movement_using_quartic(*lon_state, tt, V_KEEP_TT_MAX, st_1_candidates, FINAL_DESIRED_SPEED)
 
         for lat_traj in lat_traj_list:
             for lon_traj in lon_traj_list:
@@ -135,11 +139,11 @@ def generate_frenet_trajectory(lat_state, lon_state, opt_d, velocity_keeping=Tru
                 fp.s2 = lon_traj['s2']
                 fp.sj = lon_traj['jerk']
 
-                d_diff = (lat_traj['d0'][-1] - opt_d)**2
+                d_diff = (lat_traj['d0'][-1] - opt_d) ** 2
                 lat_cost = K_J * sum(np.power(lat_traj['jerk'], 2)) + K_T * tt + K_D * d_diff
                 fp.lat_cost = lat_cost
 
-                v_diff = (lon_traj['s1'][-1] - FINAL_DESIRED_SPEED) ** 2
+                v_diff = (lon_traj['s1'][-1] - desired_speed) ** 2
                 lon_cost = K_J * sum(np.power(lon_traj['jerk'], 2)) + K_T * tt + K_S * v_diff
 
                 fp.lon_cost = lon_cost
@@ -160,6 +164,45 @@ def generate_frenet_trajectory(lat_state, lon_state, opt_d, velocity_keeping=Tru
 
     if SHOW_OPT_LONGITUDINAL_PLOT:
         figure.show_opt_longitudinal_traj(opt_lon_traj)
+
+    return frenet_paths
+
+def generate_stopping_in_frenet(lat_state, lon_state, opt_d):
+    frenet_paths = []
+
+    dt_0_candidates = [DT_0_MIN, 0, DT_0_MAX]
+    st_0_candidates = [STOP_POS - GAP]
+    for tt in np.arange(V_KEEP_TT_MIN, V_KEEP_TT_MAX + TT_STEP, TT_STEP):
+        lat_traj_list = generate_lateral_movement(*lat_state, tt, V_KEEP_TT_MAX, dt_0_candidates)
+        lon_traj_list = generate_longitudinal_movement_using_quintic(*lon_state, tt, V_KEEP_TT_MAX, st_0_candidates)
+
+        for lat_traj in lat_traj_list:
+            for lon_traj in lon_traj_list:
+                fp = FrenetPath()
+
+                fp.t = lat_traj['t']
+                fp.d0 = lat_traj['d0']
+                fp.d1 = lat_traj['d1']
+                fp.d2 = lat_traj['d2']
+                fp.dj = lat_traj['jerk']
+
+                fp.s0 = lon_traj['s0']
+                fp.s1 = lon_traj['s1']
+                fp.s2 = lon_traj['s2']
+                fp.sj = lon_traj['jerk']
+
+                d_diff = (lat_traj['d0'][-1] - opt_d)**2
+                lat_cost = K_J * sum(np.power(lat_traj['jerk'], 2)) + K_T * tt + K_D * d_diff
+                fp.lat_cost = lat_cost
+
+                s_diff = (lon_traj['s0'][-1] - STOP_POS + GAP)**2
+                v_diff = (lon_traj['s1'][-1] - 0) ** 2
+                lon_cost = K_J * sum(np.power(lon_traj['jerk'], 2)) + K_T * tt + K_S * (s_diff + v_diff)
+
+                fp.lon_cost = lon_cost
+
+                fp.tot_cost = K_LAT * fp.lat_cost + K_LON * fp.lon_cost
+                frenet_paths.append(fp)
 
     return frenet_paths
 
