@@ -23,9 +23,9 @@ GAP = 4
 STOP_POS = 200
 
 # longitunial final state speed config
-ST_1_MIN = -3
-ST_1_MAX = 3
-ST_1_STEP = 1
+ST_1_MIN = -6
+ST_1_MAX = 6
+ST_1_STEP = 2
 
 # terminal time config
 V_KEEP_TT_MIN = 2

@@ -61,12 +61,12 @@ def demo_stopping():
     road = generate_road(lane_num=3, lane_width=3.5, road_length=300, curved=False)
     ego = Car(0, 0, 0)
     fig, ax = plt.subplots(figsize=(10,6))
-    sim = Simulator(None, road, ego, False)
+    sim = Simulator(None, road, ego)
     sim.run(ax)
     plt.show()
 
 
 if __name__ == "__main__":
-    # demo_static_obstacle_avoidancea_and_velocity_keeping()
-    demo_dynamic_obstacle_advoidance_and_curved_road_velocity_keeping()
+    demo_static_obstacle_avoidancea_and_velocity_keeping()
+    # demo_dynamic_obstacle_advoidance_and_curved_road_velocity_keeping()
     # demo_stopping()

@@ -7,11 +7,11 @@ from frenet import *
 from config import *
 from obstacles import Car
 
-def spawn_frenet_npcs(cxlist, cylist, cslist, num_npcs=7, road_length=80, lane_num=3, lane_width=3.5, min_gap=5.0):
+def spawn_frenet_npcs(cxlist, cylist, cslist, num_npcs=10, road_length=80, lane_num=3, lane_width=3.5, min_gap=5.0):
     npcs = []
     slist = []
 
-    random.seed(57)
+    random.seed(819)
     for i in range(num_npcs):
         lane = random.randint(0, lane_num - 1)
         d = (lane - (lane_num - 1) / 2) * lane_width
@@ -81,7 +81,7 @@ def plot_road(ax, road_data):
 
 
 class Simulator:
-    def __init__(self, obs, road, ego, velocity_keeping=True):
+    def __init__(self, obs, road, ego):
         self.obs = obs
         self.road = road
         self.ego = ego
@@ -91,7 +91,7 @@ class Simulator:
             world2frenet(rx, ry, self.center_line_xlist, self.center_line_ylist)[0] \
                 for (rx, ry) in list(zip(self.center_line_xlist, self.center_line_ylist))
             ]
-        self.velocity_keeping=velocity_keeping
+        # self.velocity_keeping=velocity_keeping
         
     def draw_valid_paths_and_opt_path(self, ax, paths, opt_path):
         for path in paths:
