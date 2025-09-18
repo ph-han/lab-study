@@ -94,8 +94,8 @@ class Simulator:
         # self.velocity_keeping=velocity_keeping
         
     def draw_valid_paths_and_opt_path(self, ax, paths, opt_path):
-        for path in paths:
-            ax.plot(path.xlist, path.ylist, '-', color="#A2C0F5")
+        # for path in paths:
+        #     ax.plot(path.xlist, path.ylist, '-', color="#A2C0F5")
         ax.plot(opt_path.xlist, opt_path.ylist, '-', color="#6cf483")
 
     def draw_obstacles(self, ax):
@@ -129,40 +129,66 @@ class Simulator:
             
             plt.pause(0.01)
 
+    def get_opt_traj(self, d0, d1, d2, s0, s1, s2, opt_d, mode):
+        fplist = []
+        if mode == DrivingMode.VELOCITY_KEEPING:
+            fplist = planner.generate_velocity_keeping_trajectories_in_frenet((d0, d1, d2, 0, 0), (s0, s1, s2, 0), opt_d, FINAL_DESIRED_SPEED)
+        elif mode == DrivingMode.STOPPING:
+            fplist = planner.generate_stopping_trajectories_in_frenet((d0, d1, d2, 0, 0), (s0, s1, s2, 0, 0), opt_d)
+            if s1 >= 7:
+                fplist += planner.generate_velocity_keeping_trajectories_in_frenet((d0, d1, d2, 0, 0), (s0, s1, s2, 0), opt_d, 0) # 멈추는 상황이 항상 생길 수 있기 때문에 목표 속도가 0인 것도 일단 추가
+        elif mode == DrivingMode.MERGING:
+            pass
+            # fplist = planner.generate_merging_trajectories_in_frenet((d0, d1, d2, 0, 0), (s0, s1, s2, 0, 0), opt_d)
+        elif mode == DrivingMode.FOLLOWING:
+            pass
+            # fplist = planner.generate_following_trajectories_in_frenet((d0, d1, d2, 0, 0), (s0, s1, s2, 0, 0), opt_d)
+        else:
+            print("[ERROR] Wrong mode input!")
+            return None
+
+        fplist = planner.frenet_paths_to_world(fplist, self.center_line_xlist, self.center_line_ylist, self.center_line_slist)
+        valid_paths = planner.check_valid_path(fplist, self.obs, self.road['boundaries'], self.center_line_xlist, self.center_line_ylist)
+        opt_path = planner.generate_opt_path(valid_paths)
+        return opt_path
+
     def run(self, ax):
         s0, d0 = world2frenet(self.ego.x, self.ego.y, self.center_line_xlist, self.center_line_ylist)
         s1, s2, d1, d2 = 0, 0, 0, 0
-        opt_d = 0
+        opt_d = d0
         lane_num = 3
-        for i in range(500):
+        no_new_path_cnt = 0
+        opt_traj = None
+        for i in range(700):
             if SHOW_ALL_FRENET_PATH:
                 plt.figure(2).clf()
                 plt.figure(3).clf()
                 plt.figure(4).clf()
             
-            fplist = planner.generate_frenet_trajectory((d0, d1, d2, 0, 0), (s0, s1, s2, 0, 0), opt_d)
-            fplist = planner.frenet_paths_to_world(fplist, self.center_line_xlist, self.center_line_ylist, self.center_line_slist)
-            valid_paths = planner.check_valid_path(fplist, self.obs, self.road['boundaries'], self.center_line_xlist, self.center_line_ylist)
-            opt_path = planner.generate_opt_path(valid_paths)
-            if not opt_path:
-                print(f"{i} step error no path!")
-                break
+            new_opt_traj_cand = [self.get_opt_traj(d0, d1, d2, s0, s1, s2, opt_d, mode) for mode in DrivingMode]
+            new_opt_traj = min(filter(None, new_opt_traj_cand), key=lambda o: o.tot_cost, default=None)
+            no_new_path_cnt = no_new_path_cnt + 1 if not new_opt_traj else 0
 
-            s0 = opt_path.s0[1]
-            s1 = opt_path.s1[1]
-            s2 = opt_path.s2[1]
-            d0 = opt_path.d0[1]
-            d1 = opt_path.d1[1]
-            d2 = opt_path.d2[1]
-            opt_d = opt_path.d0[1]
+            if new_opt_traj:
+                opt_traj = new_opt_traj
+            if not opt_traj:
+                print("[ERROR] Can't play simulation")
+                return
+            s0 = opt_traj.s0[1 + no_new_path_cnt]
+            s1 = opt_traj.s1[1 + no_new_path_cnt]
+            s2 = opt_traj.s2[1 + no_new_path_cnt]
+            d0 = opt_traj.d0[1 + no_new_path_cnt]
+            d1 = opt_traj.d1[1 + no_new_path_cnt]
+            d2 = opt_traj.d2[1 + no_new_path_cnt]
+            opt_d = opt_traj.d0[1 + no_new_path_cnt]
 
             ax.figure.canvas.mpl_connect(
                 'key_release_event',
                 lambda event: [exit(0) if event.key == 'escape' else None])
             ax.cla()
-            self.ego.x, self.ego.y, self.ego.yaw = opt_path.xlist[0], opt_path.ylist[0], opt_path.yawlist[0]
+            self.ego.x, self.ego.y, self.ego.yaw = opt_traj.xlist[0 + no_new_path_cnt], opt_traj.ylist[0 + no_new_path_cnt], opt_traj.yawlist[0 + no_new_path_cnt]
             self.ego.draw(ax)
-            self.draw_valid_paths_and_opt_path(ax, valid_paths, opt_path)
+            self.draw_valid_paths_and_opt_path(ax, None, opt_traj)
             self.draw_obstacles(ax)
             plot_road(ax, self.road)
             ax.plot([STOP_POS, STOP_POS], [-5.25, 5.25], '-r', lw=3)

@@ -73,7 +73,7 @@ class Car(BaseCar):
         self.steer = 0.0
 
         v0 = random.randint(4, 15)
-        self.idm = IDMVehicle(s, v=0, v0=4, a_max=ACC_MAX, s0=self.OVERALL_LENGTH, length=self.OVERALL_LENGTH)
+        self.idm = IDMVehicle(s, v=0, v0=v0, a_max=ACC_MAX, s0=self.OVERALL_LENGTH, length=self.OVERALL_LENGTH)
 
     def update_state(self, npcs, cxlist, cylist, cslist, dt=0.1):
         # s좌표 기준 정렬

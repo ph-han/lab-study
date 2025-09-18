@@ -107,7 +107,7 @@ def generate_longitudinal_movement_using_quintic(si_0, si_1, si_2, st_1, st_2, t
         trajectories.append(generated_traj)
     return trajectories
 
-def generate_velocity_keeping_trajectory_in_frenet(lat_state, lon_state, opt_d, desired_speed):
+def generate_velocity_keeping_trajectories_in_frenet(lat_state, lon_state, opt_d, desired_speed):
     frenet_paths = []
 
     opt_lon_cost = np.inf
@@ -115,14 +115,17 @@ def generate_velocity_keeping_trajectory_in_frenet(lat_state, lon_state, opt_d, 
     opt_lat_cost = np.inf
     opt_lat_traj = None
 
-    desired_speed_list = sorted(set(np.arange(1, desired_speed + 5, 5)) | {desired_speed})
-    curr_desired_speed_idx = bisect.bisect_left(desired_speed_list, lon_state[1])
+    if desired_speed == 0:
+        desired_speed_list = sorted(set(np.arange( 5 * (lon_state[1] // 5), 0, -5)) | {desired_speed})
+    else:
+        desired_speed_list = sorted(set(np.arange(0, desired_speed + 5, 5)) | {desired_speed})
+    curr_desired_speed_idx = min(bisect.bisect_left(desired_speed_list, lon_state[1]), len(desired_speed_list) - 1)
     curr_desired_speed = desired_speed_list[curr_desired_speed_idx]
     dt_0_candidates = [DT_0_MIN, 0, DT_0_MAX]
     st_1_candidates = np.arange(curr_desired_speed + ST_1_MIN, curr_desired_speed + ST_1_MAX + ST_1_STEP, ST_1_STEP)
     for tt in np.arange(V_KEEP_TT_MIN, V_KEEP_TT_MAX + TT_STEP, TT_STEP):
         lat_traj_list = generate_lateral_movement(*lat_state, tt, V_KEEP_TT_MAX, dt_0_candidates)
-        lon_traj_list = generate_longitudinal_movement_using_quartic(*lon_state, tt, V_KEEP_TT_MAX, st_1_candidates, FINAL_DESIRED_SPEED)
+        lon_traj_list = generate_longitudinal_movement_using_quartic(*lon_state, tt, V_KEEP_TT_MAX, st_1_candidates)
 
         for lat_traj in lat_traj_list:
             for lon_traj in lon_traj_list:
@@ -167,14 +170,14 @@ def generate_velocity_keeping_trajectory_in_frenet(lat_state, lon_state, opt_d, 
 
     return frenet_paths
 
-def generate_stopping_in_frenet(lat_state, lon_state, opt_d):
+def generate_stopping_trajectories_in_frenet(lat_state, lon_state, opt_d):
     frenet_paths = []
 
     dt_0_candidates = [DT_0_MIN, 0, DT_0_MAX]
     st_0_candidates = [STOP_POS - GAP]
-    for tt in np.arange(V_KEEP_TT_MIN, V_KEEP_TT_MAX + TT_STEP, TT_STEP):
-        lat_traj_list = generate_lateral_movement(*lat_state, tt, V_KEEP_TT_MAX, dt_0_candidates)
-        lon_traj_list = generate_longitudinal_movement_using_quintic(*lon_state, tt, V_KEEP_TT_MAX, st_0_candidates)
+    for tt in np.arange(STOP_TT_MIN, STOP_TT_MAX + TT_STEP, TT_STEP):
+        lat_traj_list = generate_lateral_movement(*lat_state, tt, STOP_TT_MAX, dt_0_candidates)
+        lon_traj_list = generate_longitudinal_movement_using_quintic(*lon_state, tt, STOP_TT_MAX, st_0_candidates)
 
         for lat_traj in lat_traj_list:
             for lon_traj in lon_traj_list:
@@ -196,8 +199,7 @@ def generate_stopping_in_frenet(lat_state, lon_state, opt_d):
                 fp.lat_cost = lat_cost
 
                 s_diff = (lon_traj['s0'][-1] - STOP_POS + GAP)**2
-                v_diff = (lon_traj['s1'][-1] - 0) ** 2
-                lon_cost = K_J * sum(np.power(lon_traj['jerk'], 2)) + K_T * tt + K_S * (s_diff + v_diff)
+                lon_cost = K_J * sum(np.power(lon_traj['jerk'], 2)) + K_T * tt + K_S * s_diff
 
                 fp.lon_cost = lon_cost
 
@@ -205,6 +207,44 @@ def generate_stopping_in_frenet(lat_state, lon_state, opt_d):
                 frenet_paths.append(fp)
 
     return frenet_paths
+
+# def generate_following_trajectories_in_frenet(lat_state, lon_state, opt_d):
+#     frenet_paths = []
+
+#     dt_0_candidates = [DT_0_MIN, 0, DT_0_MAX]
+#     st_0_candidates = [STOP_POS - GAP]
+#     for tt in np.arange(FOLLOWING_TT_MIN, FOLLOWING_TT_MAX + TT_STEP, TT_STEP):
+#         lat_traj_list = generate_lateral_movement(*lat_state, tt, FOLLOWING_TT_MAX, dt_0_candidates)
+#         lon_traj_list = generate_longitudinal_movement_using_quintic(*lon_state, tt, FOLLOWING_TT_MAX, st_0_candidates)
+
+#         for lat_traj in lat_traj_list:
+#             for lon_traj in lon_traj_list:
+#                 fp = FrenetPath()
+
+#                 fp.t = lat_traj['t']
+#                 fp.d0 = lat_traj['d0']
+#                 fp.d1 = lat_traj['d1']
+#                 fp.d2 = lat_traj['d2']
+#                 fp.dj = lat_traj['jerk']
+
+#                 fp.s0 = lon_traj['s0']
+#                 fp.s1 = lon_traj['s1']
+#                 fp.s2 = lon_traj['s2']
+#                 fp.sj = lon_traj['jerk']
+
+#                 d_diff = (lat_traj['d0'][-1] - opt_d)**2
+#                 lat_cost = K_J * sum(np.power(lat_traj['jerk'], 2)) + K_T * tt + K_D * d_diff
+#                 fp.lat_cost = lat_cost
+
+#                 s_diff = (lon_traj['s0'][-1] - STOP_POS + GAP)**2
+#                 v_diff = (lon_traj['s1'][-1] - 0) ** 2
+#                 lon_cost = K_J * sum(np.power(lon_traj['jerk'], 2)) + K_T * tt + K_S * (s_diff + v_diff)
+
+#                 fp.lon_cost = lon_cost
+
+#                 fp.tot_cost = K_LAT * fp.lat_cost + K_LON * fp.lon_cost
+#                 frenet_paths.append(fp)
+#     return frenet_paths
 
 def frenet_paths_to_world(frenet_paths, center_line_xlist, center_line_ylist, center_line_slist):
     for fp in frenet_paths:
@@ -308,7 +348,7 @@ def check_valid_path(paths, obs, road_boundaries, center_line_xlist, center_line
 
 def generate_opt_path(valid_paths):
     if not valid_paths:
-        return []
+        return None
     opt_path = min(valid_paths, key=lambda p: p.tot_cost)
     if SHOW_OPT_PATH:
         figure.show_opt_traj(opt_path)
@@ -322,10 +362,9 @@ if __name__ == "__main__":
 
     ego_x, ego_y = 10, 10
     frenet_s, frenet_d = world2frenet(ego_x, ego_y, center_line_xlist, center_line_ylist)
-    fplist = generate_frenet_trajectory((frenet_d, 1, 0, 0, 0), (frenet_s, 18, 0, 16, 0), 2)
+    fplist = generate_velocity_keeping_trajectories_in_frenet((frenet_d, 1, 0, 0, 0), (frenet_s, 18, 0, 16, 0), 2)
     fplist = frenet_paths_to_world(fplist, center_line_xlist, center_line_ylist, center_line_slist)
     valid_paths = check_valid_path(fplist, None, None, center_line_xlist, center_line_ylist)
-    print(valid_paths)
     generate_opt_path(valid_paths)
     figure.show_coord_transformation(None, None, (center_line_xlist, center_line_ylist))
     figure.show()

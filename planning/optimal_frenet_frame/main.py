@@ -23,7 +23,7 @@ def demo_static_obstacle_avoidancea_and_velocity_keeping():
     obstacles = [
         {
             "type": 'static',
-            "object": StaticBox(60, 3.5, 0)
+            "object": StaticCar(60, 2, 0)
         },
         {
             "type": 'static',
@@ -31,7 +31,7 @@ def demo_static_obstacle_avoidancea_and_velocity_keeping():
         },
         {
             "type": 'static',
-            "object": StaticBox(170, 3.5, 0)
+            "object": StaticCar(170, 2, 0)
         }
     ]
     fig, ax = plt.subplots(figsize=(10,6))
@@ -67,6 +67,6 @@ def demo_stopping():
 
 
 if __name__ == "__main__":
-    demo_static_obstacle_avoidancea_and_velocity_keeping()
-    # demo_dynamic_obstacle_advoidance_and_curved_road_velocity_keeping()
+    # demo_static_obstacle_avoidancea_and_velocity_keeping()
+    demo_dynamic_obstacle_advoidance_and_curved_road_velocity_keeping()
     # demo_stopping()
