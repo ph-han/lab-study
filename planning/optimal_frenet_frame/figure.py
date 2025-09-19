@@ -57,6 +57,18 @@ def show_longitudinal_traj(traj, st_1, tt, tt_max, velocity_keeping=True):
         plt.ylabel("s [m]")
     plt.grid(True)
 
+def show_jerk(trajs, tt):
+    plt.figure(5)
+    for traj in trajs:
+        if not traj:
+            continue
+        tlist = traj.t
+        jerk_list =  traj.sj
+        plt.plot(tlist, jerk_list, '-')
+    plt.title("longitudinal trajectories")
+    plt.xlabel('t [sec]')
+    plt.ylabel('jerk')
+
 def show_opt_longitudinal_traj(opt_traj):
     plt.figure(3)
     s_d_list, tlist = opt_traj

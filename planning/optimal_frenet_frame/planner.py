@@ -198,8 +198,8 @@ def generate_stopping_trajectories_in_frenet(lat_state, lon_state, opt_d):
                 lat_cost = K_J * sum(np.power(lat_traj['jerk'], 2)) + K_T * tt + K_D * d_diff
                 fp.lat_cost = lat_cost
 
-                s_diff = (lon_traj['s0'][-1] - STOP_POS + GAP)**2
-                lon_cost = K_J * sum(np.power(lon_traj['jerk'], 2)) + K_T * tt + K_S * s_diff
+                s_diff = (lon_traj['s0'][-1] - (STOP_POS - GAP))**2
+                lon_cost = K_J * sum(np.power(lon_traj['jerk'], 2)) + K_T * tt + 50 * K_S * s_diff
 
                 fp.lon_cost = lon_cost
 
@@ -208,45 +208,8 @@ def generate_stopping_trajectories_in_frenet(lat_state, lon_state, opt_d):
 
     return frenet_paths
 
-# def generate_following_trajectories_in_frenet(lat_state, lon_state, opt_d):
-#     frenet_paths = []
-
-#     dt_0_candidates = [DT_0_MIN, 0, DT_0_MAX]
-#     st_0_candidates = [STOP_POS - GAP]
-#     for tt in np.arange(FOLLOWING_TT_MIN, FOLLOWING_TT_MAX + TT_STEP, TT_STEP):
-#         lat_traj_list = generate_lateral_movement(*lat_state, tt, FOLLOWING_TT_MAX, dt_0_candidates)
-#         lon_traj_list = generate_longitudinal_movement_using_quintic(*lon_state, tt, FOLLOWING_TT_MAX, st_0_candidates)
-
-#         for lat_traj in lat_traj_list:
-#             for lon_traj in lon_traj_list:
-#                 fp = FrenetPath()
-
-#                 fp.t = lat_traj['t']
-#                 fp.d0 = lat_traj['d0']
-#                 fp.d1 = lat_traj['d1']
-#                 fp.d2 = lat_traj['d2']
-#                 fp.dj = lat_traj['jerk']
-
-#                 fp.s0 = lon_traj['s0']
-#                 fp.s1 = lon_traj['s1']
-#                 fp.s2 = lon_traj['s2']
-#                 fp.sj = lon_traj['jerk']
-
-#                 d_diff = (lat_traj['d0'][-1] - opt_d)**2
-#                 lat_cost = K_J * sum(np.power(lat_traj['jerk'], 2)) + K_T * tt + K_D * d_diff
-#                 fp.lat_cost = lat_cost
-
-#                 s_diff = (lon_traj['s0'][-1] - STOP_POS + GAP)**2
-#                 v_diff = (lon_traj['s1'][-1] - 0) ** 2
-#                 lon_cost = K_J * sum(np.power(lon_traj['jerk'], 2)) + K_T * tt + K_S * (s_diff + v_diff)
-
-#                 fp.lon_cost = lon_cost
-
-#                 fp.tot_cost = K_LAT * fp.lat_cost + K_LON * fp.lon_cost
-#                 frenet_paths.append(fp)
-#     return frenet_paths
-
 def frenet_paths_to_world(frenet_paths, center_line_xlist, center_line_ylist, center_line_slist):
+    dt=0.5
     for fp in frenet_paths:
         for s, d in zip(fp.s0, fp.d0):
             x, y, _ = frenet2world(s, d, center_line_xlist, center_line_ylist, center_line_slist)
@@ -262,13 +225,29 @@ def frenet_paths_to_world(frenet_paths, center_line_xlist, center_line_ylist, ce
         fp.yawlist.append(fp.yawlist[-1])
         fp.ds.append(fp.ds[-1])
 
-        for i in range(len(fp.yawlist) - 1):
-            yaw_diff = fp.yawlist[i + 1] - fp.yawlist[i]
-            yaw_diff = np.arctan2(np.sin(yaw_diff), np.cos(yaw_diff))
-            if fp.ds[i] > 1e-6:
-                fp.kappa.append(yaw_diff / fp.ds[i])
-            else:
-                fp.kappa.append(0.0)
+        # fp.kappa = [0.0]
+        # for i in range(1, len(fp.yawlist) - 1):
+        #     yaw_diff = fp.yawlist[i + 1] - fp.yawlist[i - 1]
+        #     yaw_diff = np.arctan2(np.sin(yaw_diff), np.cos(yaw_diff))
+        #     ds_sum = fp.ds[i] + fp.ds[i - 1]
+        #     if ds_sum > 1e-6:
+        #         fp.kappa.append(yaw_diff / ds_sum)
+        #     else:
+        #         fp.kappa.append(0.0)
+        # fp.kappa.append(0.0)
+
+        # 1차 미분 (속도)
+        xd = np.gradient(fp.xlist, dt)
+        yd = np.gradient(fp.ylist, dt)
+
+        # 2차 미분 (가속도)
+        xdd = np.gradient(xd, dt)
+        ydd = np.gradient(yd, dt)
+
+        # 곡률 계산
+        num = xd * ydd - yd * xdd
+        den = (xd**2 + yd**2)**1.5
+        fp.kappa = np.divide(num, den, out=np.zeros_like(num), where=den > 1e-6)
 
         if SHOW_ALL_FRENET_PATH:
             figure.show_frenet_path_in_world(fp.xlist, fp.ylist)
@@ -327,28 +306,35 @@ def is_in_road(path, boundaries, center_line_xlist, center_line_ylist):
 
 def check_valid_path(paths, obs, road_boundaries, center_line_xlist, center_line_ylist):
     valid_paths = []
+    cv, ca, ck, cc = 0, 0, 0, 0
     for path in paths:
         acc_squared = [(a_s**2 + a_d**2) for (a_s, a_d) in zip(path.s2, path.d2)]
         if any([v > V_MAX for v in path.s1]):
+            cv += 1
             continue
         elif any([acc > ACC_MAX**2 for acc in acc_squared]):
+            ca += 1
             continue
         elif any([abs(kappa) > K_MAX for kappa in path.kappa]):
+            ck += 1
+            print(path.ds)
+            print(path.kappa)
             continue
         elif check_go_back(path):
+            cc += 1
             continue
         elif obs and check_collision(path, obs):
+            cc += 1
             continue
-        
         valid_paths.append(path)
     if SHOW_VALID_PATH:
         for path in valid_paths:
             figure.show_frenet_valid_path_in_world(path.xlist, path.ylist)
+    print(f"tot: {len(paths)} | cv : {cv}, ca : {ca}, ck : {ck}, cc : {cc}")
+    
     return valid_paths
 
 def generate_opt_path(valid_paths):
-    if not valid_paths:
-        return None
     opt_path = min(valid_paths, key=lambda p: p.tot_cost)
     if SHOW_OPT_PATH:
         figure.show_opt_traj(opt_path)

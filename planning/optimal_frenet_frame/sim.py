@@ -35,22 +35,22 @@ def spawn_frenet_npcs(cxlist, cylist, cslist, num_npcs=10, road_length=80, lane_
 
 def generate_road(lane_num=3, lane_width=3.5, road_length=100, curved=False, amp=5, freq=0.05, num_points=1000):
     """
-    도로 좌표 데이터를 생성하는 함수
+    ���� ��ǥ �����͸� �����ϴ� �Լ�
     Made by GhatGPT-5
     """
     x = np.linspace(-2, road_length, num_points)
 
-    # 도로 중심선
+    # ���� �߽ɼ�
     if curved:
-        y_centerline = amp * np.sin(freq * x)   # 곡선 도로
+        y_centerline = amp * np.sin(freq * x)   # � ����
     else:
-        y_centerline = np.zeros_like(x)         # 직선 도로
+        y_centerline = np.zeros_like(x)         # ���� ����
 
-    # 도로 경계선
+    # ���� ��輱
     half_width = (lane_num / 2) * lane_width
     boundaries = [y_centerline + offset for offset in np.linspace(-half_width, half_width, lane_num+1)]
 
-    # 차선 중앙선
+    # ���� �߾Ӽ�
     centers = [y_centerline + offset for offset in np.linspace(-(lane_num-1)/2*lane_width, (lane_num-1)/2*lane_width, lane_num)]
 
     return {
@@ -62,17 +62,17 @@ def generate_road(lane_num=3, lane_width=3.5, road_length=100, curved=False, amp
 
 def plot_road(ax, road_data):
     """
-    도로 좌표 데이터를 받아서 그림
+    ���� ��ǥ �����͸� �޾Ƽ� �׸�
     Made by GhatGPT-5
     """
     x = road_data["center_xlist"]
 
-    # 도로 경계선 그리기
+    # ���� ��輱 �׸���
     for i, y in enumerate(road_data["boundaries"]):
         if i == 0 or i == len(road_data["boundaries"]) - 1:
-            ax.plot(x, y, 'k-', linewidth=2)   # 바깥 경계: 실선
+            ax.plot(x, y, 'k-', linewidth=2)   # �ٱ� ���: �Ǽ�
         else:
-            ax.plot(x, y, 'k--', linewidth=1)  # 차선 분리선: 점선
+            ax.plot(x, y, 'k--', linewidth=1)  # ���� �и���: ����
 
     ax.set_aspect('equal')
     ax.set_xlabel("X [m]")
@@ -94,8 +94,8 @@ class Simulator:
         # self.velocity_keeping=velocity_keeping
         
     def draw_valid_paths_and_opt_path(self, ax, paths, opt_path):
-        # for path in paths:
-        #     ax.plot(path.xlist, path.ylist, '-', color="#A2C0F5")
+        for path in paths:
+            ax.plot(path.xlist, path.ylist, '-', color="#A2C0F5")
         ax.plot(opt_path.xlist, opt_path.ylist, '-', color="#6cf483")
 
     def draw_obstacles(self, ax):
@@ -132,11 +132,12 @@ class Simulator:
     def get_opt_traj(self, d0, d1, d2, s0, s1, s2, opt_d, mode):
         fplist = []
         if mode == DrivingMode.VELOCITY_KEEPING:
-            fplist = planner.generate_velocity_keeping_trajectories_in_frenet((d0, d1, d2, 0, 0), (s0, s1, s2, 0), opt_d, FINAL_DESIRED_SPEED)
+            pass
+            # fplist = planner.generate_velocity_keeping_trajectories_in_frenet((d0, d1, d2, 0, 0), (s0, s1, s2, 0), opt_d, FINAL_DESIRED_SPEED)
         elif mode == DrivingMode.STOPPING:
+            # pass
             fplist = planner.generate_stopping_trajectories_in_frenet((d0, d1, d2, 0, 0), (s0, s1, s2, 0, 0), opt_d)
-            if s1 >= 7:
-                fplist += planner.generate_velocity_keeping_trajectories_in_frenet((d0, d1, d2, 0, 0), (s0, s1, s2, 0), opt_d, 0) # 멈추는 상황이 항상 생길 수 있기 때문에 목표 속도가 0인 것도 일단 추가
+            # fplist += planner.generate_velocity_keeping_trajectories_in_frenet((d0, d1, d2, 0, 0), (s0, s1, s2, 0), opt_d, 0)
         elif mode == DrivingMode.MERGING:
             pass
             # fplist = planner.generate_merging_trajectories_in_frenet((d0, d1, d2, 0, 0), (s0, s1, s2, 0, 0), opt_d)
@@ -146,11 +147,15 @@ class Simulator:
         else:
             print("[ERROR] Wrong mode input!")
             return None
-
+        
         fplist = planner.frenet_paths_to_world(fplist, self.center_line_xlist, self.center_line_ylist, self.center_line_slist)
+        print(f"[{mode.value}]: {len(fplist)}")
         valid_paths = planner.check_valid_path(fplist, self.obs, self.road['boundaries'], self.center_line_xlist, self.center_line_ylist)
+        print(f"after check contraint[{mode.value}]: {len(valid_paths)}")
+        if not valid_paths:
+            return None
         opt_path = planner.generate_opt_path(valid_paths)
-        return opt_path
+        return opt_path, valid_paths
 
     def run(self, ax):
         s0, d0 = world2frenet(self.ego.x, self.ego.y, self.center_line_xlist, self.center_line_ylist)
@@ -166,7 +171,8 @@ class Simulator:
                 plt.figure(4).clf()
             
             new_opt_traj_cand = [self.get_opt_traj(d0, d1, d2, s0, s1, s2, opt_d, mode) for mode in DrivingMode]
-            new_opt_traj = min(filter(None, new_opt_traj_cand), key=lambda o: o.tot_cost, default=None)
+            new_opt_traj, valid_paths = min(filter(None, new_opt_traj_cand), key=lambda o: o[0].sj[0], default=(None, []))
+            # print(new_opt_traj_cand.index(new_opt_traj))
             no_new_path_cnt = no_new_path_cnt + 1 if not new_opt_traj else 0
 
             if new_opt_traj:
@@ -188,12 +194,13 @@ class Simulator:
             ax.cla()
             self.ego.x, self.ego.y, self.ego.yaw = opt_traj.xlist[0 + no_new_path_cnt], opt_traj.ylist[0 + no_new_path_cnt], opt_traj.yawlist[0 + no_new_path_cnt]
             self.ego.draw(ax)
-            self.draw_valid_paths_and_opt_path(ax, None, opt_traj)
+            self.draw_valid_paths_and_opt_path(ax, valid_paths, opt_traj)
             self.draw_obstacles(ax)
             plot_road(ax, self.road)
             ax.plot([STOP_POS, STOP_POS], [-5.25, 5.25], '-r', lw=3)
-            ax.set_title(f"{lane_num}-lane Road Map | ego speed :{s1:.2f} m/s, desired speed: {FINAL_DESIRED_SPEED} m/s")
+            ax.set_title(f"Step: {i} | ego [S]: {self.ego.x:.2f} m, [V]: {s1:.2f} m/s")
             ax.set_xlim(self.ego.x - 10, self.ego.x + 60)
             plt.pause(0.1)
             # input("test: ")
+
 
