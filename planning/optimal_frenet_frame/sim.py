@@ -35,22 +35,18 @@ def spawn_frenet_npcs(cxlist, cylist, cslist, num_npcs=10, road_length=80, lane_
 
 def generate_road(lane_num=3, lane_width=3.5, road_length=100, curved=False, amp=5, freq=0.05, num_points=1000):
     """
-    ���� ��ǥ �����͸� �����ϴ� �Լ�
     Made by GhatGPT-5
     """
     x = np.linspace(-2, road_length, num_points)
 
-    # ���� �߽ɼ�
     if curved:
-        y_centerline = amp * np.sin(freq * x)   # � ����
+        y_centerline = amp * np.sin(freq * x)
     else:
-        y_centerline = np.zeros_like(x)         # ���� ����
+        y_centerline = np.zeros_like(x)
 
-    # ���� ��輱
     half_width = (lane_num / 2) * lane_width
     boundaries = [y_centerline + offset for offset in np.linspace(-half_width, half_width, lane_num+1)]
 
-    # ���� �߾Ӽ�
     centers = [y_centerline + offset for offset in np.linspace(-(lane_num-1)/2*lane_width, (lane_num-1)/2*lane_width, lane_num)]
 
     return {
@@ -62,17 +58,15 @@ def generate_road(lane_num=3, lane_width=3.5, road_length=100, curved=False, amp
 
 def plot_road(ax, road_data):
     """
-    ���� ��ǥ �����͸� �޾Ƽ� �׸�
     Made by GhatGPT-5
     """
     x = road_data["center_xlist"]
 
-    # ���� ��輱 �׸���
     for i, y in enumerate(road_data["boundaries"]):
         if i == 0 or i == len(road_data["boundaries"]) - 1:
-            ax.plot(x, y, 'k-', linewidth=2)   # �ٱ� ���: �Ǽ�
+            ax.plot(x, y, 'k-', linewidth=2)
         else:
-            ax.plot(x, y, 'k--', linewidth=1)  # ���� �и���: ����
+            ax.plot(x, y, 'k--', linewidth=1)
 
     ax.set_aspect('equal')
     ax.set_xlabel("X [m]")
@@ -129,11 +123,35 @@ class Simulator:
             
             plt.pause(0.01)
 
+    def find_leading_vehicle(self, obs, ego_s, ego_d, lane_width=3.5, lane_num=3):
+        leading_vehicle = None
+        min_dist = np.inf
+        
+        ego_lane = int(round(ego_d / lane_width + (lane_num - 1) / 2))
+
+        for o in obs:
+            if o['type'] != 'vehicle':
+                continue
+            obj = o['object']
+
+            obj_lane = int(round(obj.d / lane_width + (lane_num - 1) / 2))
+
+            if obj_lane != ego_lane:
+                continue
+
+            dist = obj.s - ego_s
+            if dist > 0 and dist < min_dist:
+                min_dist = dist
+                leading_vehicle = obj
+
+        return leading_vehicle
+
+
     def get_opt_traj(self, d0, d1, d2, s0, s1, s2, opt_d, mode):
         fplist = []
         if mode == DrivingMode.VELOCITY_KEEPING:
-            pass
-            # fplist = planner.generate_velocity_keeping_trajectories_in_frenet((d0, d1, d2, 0, 0), (s0, s1, s2, 0), opt_d, FINAL_DESIRED_SPEED)
+            # pass
+            fplist = planner.generate_velocity_keeping_trajectories_in_frenet((d0, d1, d2, 0, 0), (s0, s1, s2, 0), opt_d, FINAL_DESIRED_SPEED)
         elif mode == DrivingMode.STOPPING:
             # pass
             fplist = planner.generate_stopping_trajectories_in_frenet((d0, d1, d2, 0, 0), (s0, s1, s2, 0, 0), opt_d)
@@ -142,8 +160,11 @@ class Simulator:
             pass
             # fplist = planner.generate_merging_trajectories_in_frenet((d0, d1, d2, 0, 0), (s0, s1, s2, 0, 0), opt_d)
         elif mode == DrivingMode.FOLLOWING:
-            pass
-            # fplist = planner.generate_following_trajectories_in_frenet((d0, d1, d2, 0, 0), (s0, s1, s2, 0, 0), opt_d)
+            leading_vehicle = self.find_leading_vehicle(self.obs, s0, d0)
+            if not leading_vehicle:
+                return None 
+            lon_state = (s0, s1, s2, leading_vehicle.idm.v, leading_vehicle.idm.a)
+            fplist = planner.generate_following_trajectories_in_frenet((d0, d1, d2, 0, 0), lon_state, leading_vehicle, leading_vehicle.d)
         else:
             print("[ERROR] Wrong mode input!")
             return None

@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import random
 
+from vispy import scene, app
+
 import frenet
 from sim import Simulator, generate_road, spawn_frenet_npcs
 from obstacles import Car, StaticCar, StaticBox
@@ -51,7 +53,9 @@ def demo_dynamic_obstacle_advoidance_and_curved_road_velocity_keeping():
 
     for npc in spawn_frenet_npcs(road['center_xlist'], road['center_ylist'], slist):
         obstacles.append(npc)
-
+    # canvas = scene.SceneCanvas(keys='interactive', show=True, bgcolor='white')
+    # view = canvas.central_widget.add_view()
+    # view.camera = scene.PanZoomCamera(aspect=1)
     fig, ax = plt.subplots(figsize=(10,6))
     sim = Simulator(obstacles, road, ego)
     sim.run(ax)
@@ -68,5 +72,5 @@ def demo_stopping():
 
 if __name__ == "__main__":
     # demo_static_obstacle_avoidancea_and_velocity_keeping()
-    # demo_dynamic_obstacle_advoidance_and_curved_road_velocity_keeping()
-    demo_stopping()
+    demo_dynamic_obstacle_advoidance_and_curved_road_velocity_keeping()
+    # demo_stopping()
