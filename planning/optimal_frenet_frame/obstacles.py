@@ -72,7 +72,7 @@ class Car(BaseCar):
         self.yaw = Car.pi_2_pi(yaw)
         self.steer = 0.0
 
-        v0 = random.randint(4, 15)
+        v0 = random.randint(4, 12)
         self.idm = IDMVehicle(s, v=0, v0=v0, a_max=ACC_MAX, s0=self.OVERALL_LENGTH, length=self.OVERALL_LENGTH)
 
     def update_state(self, npcs, cxlist, cylist, cslist, dt=0.1):

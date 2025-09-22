@@ -118,7 +118,7 @@ def generate_velocity_keeping_trajectories_in_frenet(lat_state, lon_state, opt_d
     if desired_speed == 0:
         desired_speed_list = sorted(set(np.arange( 5 * (lon_state[1] // 5), 0, -5)) | {desired_speed})
     else:
-        desired_speed_list = sorted(set(np.arange(0, desired_speed + 5, 5)) | {desired_speed})
+        desired_speed_list = sorted(set(np.arange(5, desired_speed + 5, 5)) | {desired_speed})
     curr_desired_speed_idx = min(bisect.bisect_left(desired_speed_list, lon_state[1]), len(desired_speed_list) - 1)
     curr_desired_speed = desired_speed_list[curr_desired_speed_idx]
     dt_0_candidates = [DT_0_MIN, 0, DT_0_MAX]
@@ -180,12 +180,18 @@ def generate_stopping_trajectories_in_frenet(lat_state, lon_state, opt_d):
 
     dynamic_tt_max = STOP_TT_MAX
     dynamic_tt_min = STOP_TT_MIN
-    if remaining_s <= 3:
+    if remaining_s <= 5:
         dynamic_tt_max = 3.0
         dynamic_tt_min = 0.5
     elif remaining_s <= 15:
         dynamic_tt_max = 6.0
         dynamic_tt_min = 3.0
+    elif remaining_s <= 25:
+        dynamic_tt_max = 8.0
+        dynamic_tt_min = 5.0
+    elif lon_state[1] >= 12:
+        dynamic_tt_max = 14.0
+        dynamic_tt_min = 10.0
 
     for tt in np.arange(dynamic_tt_min, dynamic_tt_max + TT_STEP, TT_STEP):
         lat_traj_list = generate_lateral_movement(*lat_state, tt, dynamic_tt_max, dt_0_candidates)
@@ -225,7 +231,8 @@ def generate_following_trajectories_in_frenet(lat_state, lon_state, lv, opt_d):
 
     dt_0_candidates = [DT_0_MIN, 0, DT_0_MAX]
     safe_d = 5
-    st_0 = lv.s - (safe_d + 1.5 * lv.idm.v)
+    st_0 = max(lv.s - (safe_d + 1.5 * lv.idm.v), lv.s - 6)
+    print(f"follwing safe_d = {st_0}")
     st_0_candidates = [st_0 - 5, st_0, st_0 + 5]
 
     for tt in np.arange(FOLLOWING_TT_MIN, FOLLOWING_TT_MAX + TT_STEP, TT_STEP):
@@ -263,19 +270,41 @@ def generate_following_trajectories_in_frenet(lat_state, lon_state, lv, opt_d):
 
 def frenet_paths_to_world(frenet_paths, center_line_xlist, center_line_ylist, center_line_slist):
     for fp in frenet_paths:
+        center_headings = []
         for s, d in zip(fp.s0, fp.d0):
-            x, y, _ = frenet2world(s, d, center_line_xlist, center_line_ylist, center_line_slist)
+            x, y, heading = frenet2world(s, d, center_line_xlist, center_line_ylist, center_line_slist)
             fp.xlist.append(x)
             fp.ylist.append(y)
+            center_headings.append(heading)
 
-        for i in range(len(fp.xlist) - 1):
-            dx = fp.xlist[i + 1] - fp.xlist[i]
-            dy = fp.ylist[i + 1] - fp.ylist[i]
-            fp.yawlist.append(np.arctan2(dy, dx))
-            fp.ds.append(np.hypot(dx, dy))
+        if len(fp.xlist) < 2:
+            fallback_yaw = center_headings[-1] if center_headings else 0.0
+            fp.yawlist.append(fallback_yaw)
+            fp.ds.append(0.0)
+        else:
+            for i in range(len(fp.xlist) - 1):
+                dx = fp.xlist[i + 1] - fp.xlist[i]
+                dy = fp.ylist[i + 1] - fp.ylist[i]
+                step = np.hypot(dx, dy)
+                if step < 1e-4:
+                    # fall back to the center-line heading when the step is nearly zero to avoid yaw spikes at stop
+                    fallback_idx = min(i + 1, len(center_headings) - 1)
+                    yaw = center_headings[fallback_idx]
+                else:
+                    yaw = np.arctan2(dy, dx)
+                fp.yawlist.append(yaw)
+                fp.ds.append(step)
 
-        fp.yawlist.append(fp.yawlist[-1])
-        fp.ds.append(fp.ds[-1])
+        if fp.yawlist:
+            fp.yawlist.append(fp.yawlist[-1])
+        else:
+            fallback_yaw = center_headings[-1] if center_headings else 0.0
+            fp.yawlist.append(fallback_yaw)
+
+        if fp.ds:
+            fp.ds.append(fp.ds[-1])
+        else:
+            fp.ds.append(0.0)
 
         # fp.kappa = [0.0]
         # for i in range(1, len(fp.yawlist) - 1):
@@ -344,25 +373,33 @@ def check_collision(path, obstacles):
                     return True
     return False
 
-def is_forward_motion(path, eps=1e-3):
-    x = np.array(path.xlist)
-    y = np.array(path.ylist)
+def is_forward_motion(path, eps=1e-4):
 
-    # 인접 점 벡터
-    dx = np.diff(x)
-    dy = np.diff(y)
-    steps = np.vstack([dx, dy]).T  # shape=(N-1, 2)
+    s = np.array(path.s0, dtype=float)
 
-    # 초기 진행 방향 (첫 벡터)
-    init_vec = steps[0]
-    if np.linalg.norm(init_vec) < eps:
-        return True  # 거의 정지 → 문제 없음
+    # 너무 짧으면 그냥 True
+    if len(s) <= 1:
+        return True
+    
+    v = np.array(path.s1, dtype=float)
+    if np.all(np.abs(v) < 0.05):   # 전체가 거의 0 속도
+        return True
 
-    # 내적 검사: init_vec과 각 step 벡터가 90도 이상 차이나면 뒤로 감
-    for step in steps:
-        if np.dot(init_vec, step) < -eps:
-            return False
+    # s(t)가 단조 증가하는지 검사
+    if np.any(np.diff(s) < -eps):
+        return False
+
+    v = np.array(path.s1, dtype=float)
+
+    # 작은 값은 0으로 처리
+    v[(v >= 0) & (v < 0.1)] = 0.0
+
+    # 음수 속도만 진짜 후진으로 판단
+    if np.any(v < -eps):
+        return False
+
     return True
+
 
 def is_in_road(path, boundaries, center_line_xlist, center_line_ylist):
     frenet_boundaries = [world2frenet(0, boundery, center_line_xlist, center_line_ylist)[1] for boundery in [5.25, -5.25]]

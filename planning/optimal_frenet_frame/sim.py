@@ -11,7 +11,7 @@ def spawn_frenet_npcs(cxlist, cylist, cslist, num_npcs=5, road_length=80, lane_n
     npcs = []
     slist = []
 
-    random.seed(25)
+    random.seed(77)
     for i in range(num_npcs):
         lane = random.randint(0, lane_num - 1)
         d = (lane - (lane_num - 1) / 2) * lane_width
@@ -147,18 +147,16 @@ class Simulator:
         return leading_vehicle
 
 
-    def get_opt_traj(self, d0, d1, d2, s0, s1, s2, opt_d, mode):
+    def get_opt_traj(self, d0, d1, d2, s0, s1, s2, opt_d, mode, is_no_path):
         fplist = []
         if mode == DrivingMode.VELOCITY_KEEPING:
-            # pass
+            pass
             fplist = planner.generate_velocity_keeping_trajectories_in_frenet((d0, d1, d2, 0, 0), (s0, s1, s2, 0), opt_d, FINAL_DESIRED_SPEED)
         elif mode == DrivingMode.STOPPING:
             # pass
             fplist = planner.generate_stopping_trajectories_in_frenet((d0, d1, d2, 0, 0), (s0, s1, s2, 0, 0), opt_d)
-            # fplist += planner.generate_velocity_keeping_trajectories_in_frenet((d0, d1, d2, 0, 0), (s0, s1, s2, 0), opt_d, 0)
-        elif mode == DrivingMode.MERGING:
-            pass
-            # fplist = planner.generate_merging_trajectories_in_frenet((d0, d1, d2, 0, 0), (s0, s1, s2, 0, 0), opt_d)
+        # elif mode == DrivingMode.EMERGENCY and is_no_path >= 3:
+            # fplist = planner.generate_velocity_keeping_trajectories_in_frenet((d0, d1, d2, 0, 0), (s0, s1, s2, 0), opt_d, 0)
         elif mode == DrivingMode.FOLLOWING:
             pass
             # leading_vehicle = self.find_leading_vehicle(self.obs, s0, d0)
@@ -174,6 +172,7 @@ class Simulator:
         print(f"[{mode.value}]: {len(fplist)}")
         valid_paths = planner.check_valid_path(fplist, self.obs, self.road['boundaries'], self.center_line_xlist, self.center_line_ylist)
         print(f"after check contraint[{mode.value}]: {len(valid_paths)}")
+        
         if not valid_paths:
             return None
         opt_path = planner.generate_opt_path(valid_paths)
@@ -192,7 +191,7 @@ class Simulator:
                 plt.figure(3).clf()
                 plt.figure(4).clf()
             
-            new_opt_traj_cand = [self.get_opt_traj(d0, d1, d2, s0, s1, s2, opt_d, mode) for mode in DrivingMode]
+            new_opt_traj_cand = [self.get_opt_traj(d0, d1, d2, s0, s1, s2, opt_d, mode, no_new_path_cnt) for mode in DrivingMode]
             new_opt_traj, valid_paths = min(filter(None, new_opt_traj_cand), key=lambda o: o[0].sj[0], default=(None, []))
             # print(new_opt_traj_cand.index(new_opt_traj))
             no_new_path_cnt = no_new_path_cnt + 1 if not new_opt_traj else 0

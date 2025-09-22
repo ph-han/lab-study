@@ -1,9 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import random
-
-from vispy import scene, app
-
 import frenet
 from sim import Simulator, generate_road, spawn_frenet_npcs
 from obstacles import Car, StaticCar, StaticBox

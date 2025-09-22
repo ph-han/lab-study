@@ -3,7 +3,7 @@ from enum import Enum
 class DrivingMode(Enum):
     VELOCITY_KEEPING = 1
     STOPPING = 2
-    MERGING = 3
+    EMERGENCY = 3
     FOLLOWING = 4
 
 # common config
@@ -16,7 +16,7 @@ DT_0_STEP = 3.5
 
 # longitunial final state position config
 GAP = 4
-STOP_POS = 400
+STOP_POS = 300
 
 # longitunial final state speed config
 ST_1_MIN = -6
@@ -53,7 +53,7 @@ K_LON = 1.0
 DESIRED_LAT_POS = 0
 FINAL_DESIRED_SPEED = 20
 DESIRED_SPEED = 5
-DESIRED_DISTACE = 16
+DESIRED_DISTACE = 6
 V_MAX = 20
-ACC_MAX = 4
-K_MAX = 4
+ACC_MAX = 5
+K_MAX = 0.3
