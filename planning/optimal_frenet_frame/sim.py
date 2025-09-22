@@ -7,11 +7,11 @@ from frenet import *
 from config import *
 from obstacles import Car
 
-def spawn_frenet_npcs(cxlist, cylist, cslist, num_npcs=10, road_length=80, lane_num=3, lane_width=3.5, min_gap=5.0):
+def spawn_frenet_npcs(cxlist, cylist, cslist, num_npcs=5, road_length=80, lane_num=3, lane_width=3.5, min_gap=5.0):
     npcs = []
     slist = []
 
-    random.seed(819)
+    random.seed(25)
     for i in range(num_npcs):
         lane = random.randint(0, lane_num - 1)
         d = (lane - (lane_num - 1) / 2) * lane_width
@@ -160,11 +160,12 @@ class Simulator:
             pass
             # fplist = planner.generate_merging_trajectories_in_frenet((d0, d1, d2, 0, 0), (s0, s1, s2, 0, 0), opt_d)
         elif mode == DrivingMode.FOLLOWING:
-            leading_vehicle = self.find_leading_vehicle(self.obs, s0, d0)
-            if not leading_vehicle:
-                return None 
-            lon_state = (s0, s1, s2, leading_vehicle.idm.v, leading_vehicle.idm.a)
-            fplist = planner.generate_following_trajectories_in_frenet((d0, d1, d2, 0, 0), lon_state, leading_vehicle, leading_vehicle.d)
+            pass
+            # leading_vehicle = self.find_leading_vehicle(self.obs, s0, d0)
+            # if not leading_vehicle:
+            #     return None 
+            # lon_state = (s0, s1, s2, leading_vehicle.idm.v, leading_vehicle.idm.a)
+            # fplist = planner.generate_following_trajectories_in_frenet((d0, d1, d2, 0, 0), lon_state, leading_vehicle, leading_vehicle.d)
         else:
             print("[ERROR] Wrong mode input!")
             return None
@@ -178,14 +179,14 @@ class Simulator:
         opt_path = planner.generate_opt_path(valid_paths)
         return opt_path, valid_paths
 
-    def run(self, ax):
+    def run(self, name, ax):
         s0, d0 = world2frenet(self.ego.x, self.ego.y, self.center_line_xlist, self.center_line_ylist)
         s1, s2, d1, d2 = 0, 0, 0, 0
         opt_d = d0
         lane_num = 3
         no_new_path_cnt = 0
         opt_traj = None
-        for i in range(700):
+        for i in range(1000):
             if SHOW_ALL_FRENET_PATH:
                 plt.figure(2).clf()
                 plt.figure(3).clf()
@@ -207,7 +208,7 @@ class Simulator:
             d0 = opt_traj.d0[1 + no_new_path_cnt]
             d1 = opt_traj.d1[1 + no_new_path_cnt]
             d2 = opt_traj.d2[1 + no_new_path_cnt]
-            opt_d = opt_traj.d0[1 + no_new_path_cnt]
+            opt_d = opt_traj.d0[-1]
 
             ax.figure.canvas.mpl_connect(
                 'key_release_event',
@@ -219,7 +220,7 @@ class Simulator:
             self.draw_obstacles(ax)
             plot_road(ax, self.road)
             ax.plot([STOP_POS, STOP_POS], [-5.25, 5.25], '-r', lw=3)
-            ax.set_title(f"Step: {i} | ego [S]: {self.ego.x:.2f} m, [V]: {s1:.2f} m/s")
+            ax.set_title(f"{name}\nStep: {i} | ego [S]: {self.ego.x:.2f} m, [V]: {s1:.2f} m/s")
             ax.set_xlim(self.ego.x - 10, self.ego.x + 60)
             plt.pause(0.1)
             # input("test: ")

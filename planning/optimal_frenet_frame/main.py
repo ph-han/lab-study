@@ -20,7 +20,7 @@ TODO
 '''
 
 def demo_static_obstacle_avoidancea_and_velocity_keeping():
-    road = generate_road(lane_num=3, lane_width=3.5, road_length=300, curved=False)
+    road = generate_road(lane_num=3, lane_width=3.5, road_length=400, curved=False)
     ego = Car(0, 3.5, 0)
     obstacles = [
         {
@@ -33,12 +33,12 @@ def demo_static_obstacle_avoidancea_and_velocity_keeping():
         },
         {
             "type": 'static',
-            "object": StaticCar(170, 2, 0)
+            "object": StaticBox(170, 3.5, 0)
         }
     ]
     fig, ax = plt.subplots(figsize=(10,6))
     sim = Simulator(obstacles, road, ego)
-    sim.run(ax)
+    sim.run('Static Obstacle Avoidance and Velocity Keeping', ax)
     plt.show()
 
 def demo_dynamic_obstacle_advoidance_and_curved_road_velocity_keeping():
@@ -58,7 +58,7 @@ def demo_dynamic_obstacle_advoidance_and_curved_road_velocity_keeping():
     # view.camera = scene.PanZoomCamera(aspect=1)
     fig, ax = plt.subplots(figsize=(10,6))
     sim = Simulator(obstacles, road, ego)
-    sim.run(ax)
+    sim.run('Dynamic Obstacle Avoidance and Velocity Keeping on a Curved Road', ax)
     plt.show()
 
 def demo_stopping():
@@ -66,11 +66,11 @@ def demo_stopping():
     ego = Car(0, 0, 0)
     fig, ax = plt.subplots(figsize=(10,6))
     sim = Simulator(None, road, ego)
-    sim.run(ax)
+    sim.run('Stopping demo at 200 Meters', ax)
     plt.show()
 
 
 if __name__ == "__main__":
-    # demo_static_obstacle_avoidancea_and_velocity_keeping()
-    demo_dynamic_obstacle_advoidance_and_curved_road_velocity_keeping()
+    demo_static_obstacle_avoidancea_and_velocity_keeping()
+    # demo_dynamic_obstacle_advoidance_and_curved_road_velocity_keeping()
     # demo_stopping()

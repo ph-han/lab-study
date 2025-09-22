@@ -16,7 +16,7 @@ DT_0_STEP = 3.5
 
 # longitunial final state position config
 GAP = 4
-STOP_POS = 300
+STOP_POS = 400
 
 # longitunial final state speed config
 ST_1_MIN = -6
@@ -44,7 +44,7 @@ SHOW_VALID_PATH = False
 # cost config
 K_J   = 0.1
 K_T   = 0.1
-K_D   = 1.0
+K_D   = 50.0
 K_S   = 1.0
 K_LAT = 1.0
 K_LON = 1.0

@@ -173,7 +173,7 @@ def generate_velocity_keeping_trajectories_in_frenet(lat_state, lon_state, opt_d
 def generate_stopping_trajectories_in_frenet(lat_state, lon_state, opt_d):
     frenet_paths = []
 
-    dt_0_candidates = np.arange(DT_0_MIN, DT_0_MAX + 1.75, 1.75)
+    dt_0_candidates = np.arange(DT_0_MIN, DT_0_MAX + DT_0_STEP, DT_0_STEP)
     st_0_candidates = [STOP_POS - GAP]
 
     remaining_s = (STOP_POS - GAP) - lon_state[0]
@@ -181,10 +181,9 @@ def generate_stopping_trajectories_in_frenet(lat_state, lon_state, opt_d):
     dynamic_tt_max = STOP_TT_MAX
     dynamic_tt_min = STOP_TT_MIN
     if remaining_s <= 3:
-        print("ads")
         dynamic_tt_max = 3.0
         dynamic_tt_min = 0.5
-    elif remaining_s <= 10:
+    elif remaining_s <= 15:
         dynamic_tt_max = 6.0
         dynamic_tt_min = 3.0
 
@@ -345,8 +344,25 @@ def check_collision(path, obstacles):
                     return True
     return False
 
-def check_go_back(path):
-    return any(np.array(path.s1) < 0)
+def is_forward_motion(path, eps=1e-3):
+    x = np.array(path.xlist)
+    y = np.array(path.ylist)
+
+    # 인접 점 벡터
+    dx = np.diff(x)
+    dy = np.diff(y)
+    steps = np.vstack([dx, dy]).T  # shape=(N-1, 2)
+
+    # 초기 진행 방향 (첫 벡터)
+    init_vec = steps[0]
+    if np.linalg.norm(init_vec) < eps:
+        return True  # 거의 정지 → 문제 없음
+
+    # 내적 검사: init_vec과 각 step 벡터가 90도 이상 차이나면 뒤로 감
+    for step in steps:
+        if np.dot(init_vec, step) < -eps:
+            return False
+    return True
 
 def is_in_road(path, boundaries, center_line_xlist, center_line_ylist):
     frenet_boundaries = [world2frenet(0, boundery, center_line_xlist, center_line_ylist)[1] for boundery in [5.25, -5.25]]
@@ -372,7 +388,7 @@ def check_valid_path(paths, obs, road_boundaries, center_line_xlist, center_line
             # print(path.ds)
             # print(path.kappa)
             continue
-        elif check_go_back(path):
+        elif not is_forward_motion(path):
             cb += 1
             continue
         elif obs and check_collision(path, obs):
