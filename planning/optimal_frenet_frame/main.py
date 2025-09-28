@@ -39,7 +39,7 @@ def demo_static_obstacle_avoidancea_and_velocity_keeping():
     plt.show()
 
 def demo_dynamic_obstacle_advoidance_and_curved_road_velocity_keeping():
-    road = generate_road(lane_num=3, lane_width=3.5, road_length=300, curved=True)
+    road = generate_road(lane_num=3, lane_width=3.5, road_length=600, curved=True)
     ego = Car(0, 0, 0)
     slist = [
         frenet.world2frenet(rx, ry, road['center_xlist'], road['center_ylist'])[0] \
@@ -68,6 +68,6 @@ def demo_stopping():
 
 
 if __name__ == "__main__":
-    demo_static_obstacle_avoidancea_and_velocity_keeping()
-    # demo_dynamic_obstacle_advoidance_and_curved_road_velocity_keeping()
+    # demo_static_obstacle_avoidancea_and_velocity_keeping()
+    demo_dynamic_obstacle_advoidance_and_curved_road_velocity_keeping()
     # demo_stopping()

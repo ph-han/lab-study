@@ -16,7 +16,7 @@ DT_0_STEP = 3.5
 
 # longitunial final state position config
 GAP = 4
-STOP_POS = 300
+STOP_POS = 500
 
 # longitunial final state speed config
 ST_1_MIN = -6
@@ -33,19 +33,19 @@ FOLLOWING_TT_MAX = 6
 TT_STEP = 0.5
 
 # plot config
-SHOW_LATERAL_PLOT = False
-SHOW_OPT_LATERAL_PLOT = False
-SHOW_LONGITUDINAL_PLOT = False
-SHOW_OPT_LONGITUDINAL_PLOT = False
-SHOW_ALL_FRENET_PATH = False
-SHOW_OPT_PATH = False
-SHOW_VALID_PATH = False
+SHOW_LATERAL_PLOT = True
+SHOW_OPT_LATERAL_PLOT = True
+SHOW_LONGITUDINAL_PLOT = True
+SHOW_OPT_LONGITUDINAL_PLOT = True
+SHOW_ALL_FRENET_PATH = True
+SHOW_OPT_PATH = True
+SHOW_VALID_PATH = True
 
 # cost config
 K_J   = 0.1
 K_T   = 0.1
 K_D   = 50.0
-K_S   = 1.0
+K_S   = 30.0
 K_LAT = 1.0
 K_LON = 1.0
 

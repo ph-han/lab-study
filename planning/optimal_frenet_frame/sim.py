@@ -7,11 +7,11 @@ from frenet import *
 from config import *
 from obstacles import Car
 
-def spawn_frenet_npcs(cxlist, cylist, cslist, num_npcs=5, road_length=80, lane_num=3, lane_width=3.5, min_gap=5.0):
+def spawn_frenet_npcs(cxlist, cylist, cslist, num_npcs=6, road_length=80, lane_num=3, lane_width=3.5, min_gap=5.0):
     npcs = []
     slist = []
 
-    random.seed(77)
+    random.seed(72)
     for i in range(num_npcs):
         lane = random.randint(0, lane_num - 1)
         d = (lane - (lane_num - 1) / 2) * lane_width
@@ -155,8 +155,8 @@ class Simulator:
         elif mode == DrivingMode.STOPPING:
             # pass
             fplist = planner.generate_stopping_trajectories_in_frenet((d0, d1, d2, 0, 0), (s0, s1, s2, 0, 0), opt_d)
-        # elif mode == DrivingMode.EMERGENCY and is_no_path >= 3:
-            # fplist = planner.generate_velocity_keeping_trajectories_in_frenet((d0, d1, d2, 0, 0), (s0, s1, s2, 0), opt_d, 0)
+        elif mode == DrivingMode.EMERGENCY and is_no_path >= 3:
+            fplist = planner.generate_velocity_keeping_trajectories_in_frenet((d0, d1, d2, 0, 0), (s0, s1, s2, 0), opt_d, 0)
         elif mode == DrivingMode.FOLLOWING:
             pass
             # leading_vehicle = self.find_leading_vehicle(self.obs, s0, d0)

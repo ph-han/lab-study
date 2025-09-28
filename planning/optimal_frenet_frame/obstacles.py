@@ -90,7 +90,7 @@ class Car(BaseCar):
                     leader = npc['object'].idm
 
         self.s = self.idm.get_s()
-        if self.s < 300:
+        if self.s < 495:
             self.idm.update_acceleration(leader)
             self.idm.update_state()
         self.x, self.y, self.yaw = frenet2world(self.idm.get_s(), self.d, cxlist, cylist, cslist)

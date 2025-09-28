@@ -115,17 +115,23 @@ def generate_velocity_keeping_trajectories_in_frenet(lat_state, lon_state, opt_d
     opt_lat_cost = np.inf
     opt_lat_traj = None
 
+    v_keep_tt_max = V_KEEP_TT_MAX
+    v_keep_tt_min = V_KEEP_TT_MIN
+
     if desired_speed == 0:
         desired_speed_list = sorted(set(np.arange( 5 * (lon_state[1] // 5), 0, -5)) | {desired_speed})
+        if lon_state[1] < 3:
+            v_keep_tt_min = 0.5
+            v_keep_tt_max = 3.0 
     else:
         desired_speed_list = sorted(set(np.arange(5, desired_speed + 5, 5)) | {desired_speed})
     curr_desired_speed_idx = min(bisect.bisect_left(desired_speed_list, lon_state[1]), len(desired_speed_list) - 1)
     curr_desired_speed = desired_speed_list[curr_desired_speed_idx]
     dt_0_candidates = [DT_0_MIN, 0, DT_0_MAX]
     st_1_candidates = np.arange(curr_desired_speed + ST_1_MIN, curr_desired_speed + ST_1_MAX + ST_1_STEP, ST_1_STEP)
-    for tt in np.arange(V_KEEP_TT_MIN, V_KEEP_TT_MAX + TT_STEP, TT_STEP):
-        lat_traj_list = generate_lateral_movement(*lat_state, tt, V_KEEP_TT_MAX, dt_0_candidates)
-        lon_traj_list = generate_longitudinal_movement_using_quartic(*lon_state, tt, V_KEEP_TT_MAX, st_1_candidates)
+    for tt in np.arange(v_keep_tt_min, v_keep_tt_max + TT_STEP, TT_STEP):
+        lat_traj_list = generate_lateral_movement(*lat_state, tt, v_keep_tt_max, dt_0_candidates)
+        lon_traj_list = generate_longitudinal_movement_using_quartic(*lon_state, tt, v_keep_tt_max, st_1_candidates)
 
         for lat_traj in lat_traj_list:
             for lon_traj in lon_traj_list:
@@ -453,7 +459,7 @@ if __name__ == "__main__":
 
     ego_x, ego_y = 10, 10
     frenet_s, frenet_d = world2frenet(ego_x, ego_y, center_line_xlist, center_line_ylist)
-    fplist = generate_velocity_keeping_trajectories_in_frenet((frenet_d, 1, 0, 0, 0), (frenet_s, 18, 0, 16, 0), 2)
+    fplist = generate_stopping_trajectories_in_frenet((frenet_d, 1, 0, 0, 0), (frenet_s, 18, 0, 16, 0), 2)
     fplist = frenet_paths_to_world(fplist, center_line_xlist, center_line_ylist, center_line_slist)
     valid_paths = check_valid_path(fplist, None, None, center_line_xlist, center_line_ylist)
     generate_opt_path(valid_paths)
