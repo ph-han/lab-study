@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from Car import Car
+from .Car import Car
 
 # KP = 1.0
 # KD = 1.0
@@ -20,12 +20,10 @@ class PIDController:
 
     def control(self, curr, target, dt):
         error = target - curr
-        print(f"error: {error}")
         self.integral += error * dt
         derivative = (error - self.prev_error) / dt
 
         output = self.KP * error + self.KI * self.integral + self.KD * derivative
-        print(f"output: {output}")
         self.prev_error = error
         return output
 
@@ -45,7 +43,7 @@ class PurePursuit:
         end = min(len(traj[0]), self.prev_wp_idx + search_window)
 
         dx = traj[0][start:end] - curr[0]
-        dy = traj[1][start:end] - curr[1]
+        dy = traj[1][start:end]- curr[1]
         d = np.hypot(dx, dy)
 
         idx = start + np.argmin(abs(d - ld))
@@ -53,8 +51,9 @@ class PurePursuit:
         return idx
 
     def find_lookahead_point_frenet(self, curr_s, curr_d, traj_s, traj_x, traj_y):
-        ld = max(self.K_LD * curr_s, self.min_ld)  # 또는 curr 속도로 계산
-        s_target = curr_s + ld
+        # ld = self.min_ld
+        ld = max(self.K_LD * curr_s, self.min_ld)
+        s_target = ld
         idx = np.searchsorted(traj_s, s_target)
         if idx >= len(traj_s):
             idx = len(traj_s) - 1
@@ -93,11 +92,13 @@ if __name__ == "__main__":
 
     dt = 0.1
     sim_time = 20
-    target_speed = 8.0  # [m/s]
+    target_speed = 10.0  # [m/s]
 
+    cpx, cpy = [], []
     for _ in np.arange(0, sim_time, dt):
         plt.cla()
         plt.plot(cx, cy, "k--", label="Reference Path")
+        plt.plot(cpx, cpy, "b-", label="Car Trajectory")
         plt.title(f"Steer: {car.steer:.2f}, Speed: {car.v:.2f}")
         car.draw()
         if pp.prev_wp_idx == len(cx) - 1:
@@ -105,6 +106,8 @@ if __name__ == "__main__":
         delta = pp.steer_control((car.x, car.y, car.yaw, car.v), (cx, cy))
         accel = pid.control(car.v, target_speed, dt)
         car.action(delta, accel, dt)
+        cpx.append(car.x)
+        cpy.append(car.y)
         plt.axis("equal")
         plt.grid(True)
         plt.legend()
