@@ -2,19 +2,19 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 import cspace
-from dubins import dubins_path, gen_path
+from dubins import dubins_path, gen_path, mod2pi
 from Car import Car
 
 class Node:
-    def __init__(self, position, yaw, xlist=[], ylist=[], yawlist=[], parent=None, cost=0):
+    def __init__(self, position, yaw, xlist=None, ylist=None, yawlist=None, parent=None, cost=0):
         self.x, self.y = position
         self.yaw = yaw
         self.parent = parent
         self.cost = cost
-        self.xlist, self.ylist, self.yawlist = xlist, ylist, yawlist
+        self.xlist, self.ylist, self.yawlist = xlist or [], ylist or [], yawlist or []
 
 class RRT:
-    def __init__(self, init_pos, goal_pos, iter_num, cspace, robot_radius=1, expand_size=2):
+    def __init__(self, init_pos, goal_pos, iter_num, cspace, robot_radius=1, expand_size=4):
         self.init_x, self.init_y, self.init_yaw = init_pos
         self.goal_x, self.goal_y, self.goal_yaw = goal_pos
         self.iter_num = iter_num
@@ -25,16 +25,24 @@ class RRT:
 
         self.rrt_paths = []
 
-        plt.plot(self.init_x, self.init_y, 'ob')
-        plt.plot(self.goal_x, self.goal_y, 'xr')
+        plt.arrow(self.init_x, self.init_y, 
+                  1.5 * np.cos(self.init_yaw), 1.5 * np.sin(self.init_yaw),
+                  head_width=0.3, head_length=0.4,
+                  fc="blue", ec="blue")
+        plt.arrow(self.goal_x, self.goal_y, 
+                  1.5 * np.cos(self.goal_yaw), 1.5 * np.sin(self.goal_yaw),
+                  head_width=0.3, head_length=0.4,
+                  fc="red", ec="red")
     
 
-    def check_goal(self, curr):
-        yaw_diff = abs(curr.yaw - self.goal_yaw)
-        return curr.x == self.goal_x and curr.y == self.goal_y and yaw_diff < np.deg2rad(3)
+    def check_goal(self, curr, pos_tol=1.0, yaw_tol=np.deg2rad(10)):
+        if np.hypot(curr.x - self.goal_x, curr.y - self.goal_y) > pos_tol:
+            return False
+        yaw_diff = abs(mod2pi(curr.yaw - self.goal_yaw))
+        return yaw_diff < yaw_tol
     
     def get_random_node(self):
-        if random.randint(0, 100) > 30:
+        if random.randint(0, 100) > 20:
             x = random.uniform(self.cspace.min_x, self.cspace.max_x)
             y = random.uniform(self.cspace.min_y, self.cspace.max_y)
             yaw = random.uniform(0, np.pi * 2)
@@ -50,8 +58,8 @@ class RRT:
         nearest_node = None
         for node in self.rrt_paths:
             xy_dist = np.hypot(node.x - rand.x, node.y - rand.y)
-            yaw_diff = abs(node.yaw - rand.yaw)
-            dist = xy_dist + yaw_diff
+            yaw_diff = abs(mod2pi(node.yaw - rand.yaw))
+            dist = xy_dist + 0.3 * yaw_diff
             if nearest_node_dist > dist:
                 nearest_node = node
                 nearest_node_dist = dist
@@ -105,7 +113,7 @@ class RRT:
                 continue
 
             self.rrt_paths.append(new)
-            plt.plot([near.x, new.x], [near.y, new.y], '-g')
+            plt.plot(new.xlist, new.ylist, '-g')
             plt.title("RRT - Dubins")
             plt.axis('equal')
             plt.pause(0.001)
@@ -117,41 +125,53 @@ class RRT:
             
         if not self.is_goal:
             print(f"No path... more iteration")
+            return None
 
         return self.rrt_paths[-1]
     
 def plot_final_path(final_node):
-    xlist = []
-    ylist = []
+    xs_segments = []
+    ys_segments = []
     
     curr = final_node
     while curr:
-        xlist.append(curr.x)
-        ylist.append(curr.y)
+        if curr.xlist and curr.ylist:
+            xs_segments.append(curr.xlist)
+            ys_segments.append(curr.ylist)
+        else:
+            xs_segments.append([curr.x])
+            ys_segments.append([curr.y])
         curr = curr.parent
 
-    plt.plot(xlist[::-1], ylist[::-1], '-r')
+    xs_segments = xs_segments[::-1]
+    ys_segments = ys_segments[::-1]
+
+    xs = [p for seg in xs_segments for p in seg]
+    ys = [p for seg in ys_segments for p in seg]
+
+    plt.plot(xs, ys, '-r', linewidth=2)
+
 
 
 if __name__ == "__main__":
     init_pos = (-15, -10, np.deg2rad(90))
-    goal_pos = (7, 8, np.deg2rad(0))
+    goal_pos = (8, 8, np.deg2rad(180))
     obstacleList = [
-        # (5, 5, 1), (3, 6, 2), (3, 8, 2),
-        # (3, 10, 2), (7, 5, 2), (9, 5, 2), 
-        # (8, 10, 0.3), (0, -1, 1), (-10, 10, 2),
-        # (10, -15, 1), (-10, -8, 3), (15, -7, 2),
+        (5, 5, 1), (3, 6, 2), (3, 8, 2),
+        (3, 10, 2), (7, 5, 2), (9, 5, 2), 
+        (8, 10, 0.3), (0, -1, 1), (-10, 10, 2),
+        (10, -15, 1), (-10, -8, 3), (15, -7, 2),
         (3, -13, 2), (5, -7, 2), (-13, 2, 2)
     ]
     cspace_size = (20, 20)
-    cspace = cspace.CSpace(cspace_size, obstacleList) # only 2 dimension
-    cspace.plot()
+    _cspace = cspace.CSpace(cspace_size, obstacleList) # only 2 dimension
+    _cspace.plot()
 
-    rrt = RRT(init_pos, goal_pos, 3000, cspace)
+    rrt = RRT(init_pos, goal_pos, 1500, _cspace)
     final_node = rrt.planning()
-    print(final_node.x, final_node.y)
-    plot_final_path(final_node)
+    if final_node:
+        plot_final_path(final_node)
 
-    plt.title("RRT")
+    plt.title("RRT - Dubins")
     plt.axis('equal')
     plt.show()

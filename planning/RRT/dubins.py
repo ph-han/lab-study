@@ -286,7 +286,7 @@ def _calc_cost(path, r_turn):
         if p[0] == 's':
             cost += p[1]
         else:
-            cost += abs(np.rad2deg(p[1])) * r_turn
+            cost += abs(p[1]) * r_turn
     return cost
 
 def _get_opt_path(paths, r_turn):
@@ -326,8 +326,8 @@ def gen_path(start_pos, dubins_params, r_turn, one_step=False, one_step_size=0):
     curr_cost = 0
     for p in dubins_params:
         if p[0] == 's':
-            print(p[1])
-            ds = 1
+            # print(p[1])
+            ds = 0.5
             base_x, base_y = path_x[-1], path_y[-1]
             yaw = path_yaw[-1]
             cost = curr_cost
@@ -373,7 +373,7 @@ def dubins_path(curr_state, goal_state, r_turn):
     for idx, word in enumerate(dubins_words):
         path = word(di, r_turn)
         if path is None:
-            print("is none!")
+            # print("is none!")
             continue
         paths.append(path)
         # px, py, pyaw = gen_path(curr_state, path)
@@ -401,7 +401,7 @@ if __name__ == "__main__":
               fc="blue", ec="blue")
     r_turn =Car.WHEEL_BASE / math.tan(Car.MAX_STEER)
     opt_path, opt_cost = dubins_path(curr_state, goal_state, r_turn)
-    print("cost = ", opt_cost)
+    # print("cost = ", opt_cost)
 
     px, py, pyaw = gen_path(curr_state, opt_path)
     count = 0
