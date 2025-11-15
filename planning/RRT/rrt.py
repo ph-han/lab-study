@@ -50,7 +50,7 @@ class RRT:
         
         return nearest_node
     
-    def select_input(self, rand, near):
+    def steer(self, rand, near):
         dist = np.hypot(rand.x - near.x, rand.y - near.y)
         theta = np.arctan2(rand.y - near.y, rand.x - near.x)
         if  dist < self.expand_size:
@@ -85,7 +85,7 @@ class RRT:
             rand = self.get_random_node()
             near = self.get_nearest_node(rand)
 
-            new = self.select_input(rand, near)
+            new = self.steer(rand, near)
 
             if self.is_collision(new):
                 continue

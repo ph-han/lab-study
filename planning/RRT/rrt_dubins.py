@@ -66,7 +66,7 @@ class RRT:
         
         return nearest_node
     
-    def select_input(self, rand, near):
+    def steer(self, rand, near):
         curr_state = (near.x, near.y, near.yaw)
         target_state = (rand.x, rand.y, rand.yaw)
         r_turn = Car.WHEEL_BASE / np.tan(Car.MAX_STEER)
@@ -107,7 +107,7 @@ class RRT:
             rand = self.get_random_node()
             near = self.get_nearest_node(rand)
 
-            new = self.select_input(rand, near)
+            new = self.steer(rand, near)
 
             if self.is_collision(new):
                 continue
