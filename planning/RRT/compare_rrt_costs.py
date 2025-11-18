@@ -31,12 +31,24 @@ def collect_costs(num_runs=100, iter_num=1000, base_seed=0, seed_gap=10):
     rrt_costs = []
     rrt_star_costs = []
 
-    for seed in seeds:
+    total = len(seeds)
+
+    for i, seed in enumerate(seeds, start=1):
         rrt_final, _ = rrt.run_rrt(iter_num=iter_num, seed=seed, do_plot=False)
         rrt_costs.append(rrt_final.cost)
 
         rrt_star_final, _ = rrt_star.run_rrt_star(seed=seed, do_plot=False)
         rrt_star_costs.append(rrt_star_final.cost)
+
+        # --- print progress bar ---
+        progress = i / total
+        bar_len = 30
+        filled = int(bar_len * progress)
+        bar = "#" * filled + "-" * (bar_len - filled)
+        sys.stdout.write(f"\r[{bar}] {i}/{total}")
+        sys.stdout.flush()
+
+    print() 
 
     return seeds, rrt_costs, rrt_star_costs
 
@@ -120,7 +132,7 @@ def plot_histograms(rrt_costs, rrt_star_costs, rrt_stats, rrt_star_stats, bins=1
 
 
 if __name__ == "__main__":
-    seeds, rrt_costs, rrt_star_costs = collect_costs(num_runs=200)
+    seeds, rrt_costs, rrt_star_costs = collect_costs(num_runs=1000)
     print("Seeds      :", seeds)
     print("RRT costs  :", rrt_costs)
     print("RRT* costs :", rrt_star_costs)

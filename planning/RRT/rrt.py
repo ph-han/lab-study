@@ -100,7 +100,7 @@ class RRT:
             
             if self.check_goal(new):
                 self.is_goal = True
-                print(f"Find path!")
+                # print(f"Find path!")
                 break
             
         if not self.is_goal:
