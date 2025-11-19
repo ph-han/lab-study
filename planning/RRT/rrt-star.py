@@ -14,7 +14,7 @@ class Node:
         return abs(self.x - other.x) < eps and abs(self.y - other.y) < eps
 
 class RRTStar:
-    def __init__(self, seed, init_pos, goal_pos, iter_num, cspace, near_distance=15, robot_radius=1, expand_size=2):
+    def __init__(self, seed, init_pos, goal_pos, iter_num, cspace, near_distance=7, robot_radius=1, expand_size=2):
         self.init_x, self.init_y = init_pos
         self.goal_x, self.goal_y = goal_pos
         self.iter_num = iter_num
@@ -92,7 +92,7 @@ class RRTStar:
     
     def choose_parent(self, near_by_vertices, nearest, new):
         candi_parent = nearest
-        cost_min = nearest.cost + new.cost
+        cost_min = new.cost
 
         for near_id in near_by_vertices:
             near = self.paths[near_id]
@@ -124,9 +124,10 @@ class RRTStar:
                 near.cost = t_cost + new.cost
                 self.update_subtree_cost(near)
 
-    def planning(self):
+    def planning(self, is_rewiring=True, is_break=False):
         init_node = Node((self.init_x, self.init_y))
 
+        best_node = None
         self.paths.append(init_node)
         for it in range(self.iter_num):
             rand = self.get_random_node()
@@ -137,22 +138,25 @@ class RRTStar:
             if not self.is_collision(new):
                 near_by_vertices = self.get_near_ids(new)
                 parent, cost = self.choose_parent(near_by_vertices, nearest, new)
+                print(f"({nearest.x}, {nearest.y}) -> ({parent.x}, {parent.y})")
                 new.parent = parent
                 new.cost = cost
                 self.paths.append(new)
-                self.rewire(near_by_vertices, parent, new)
-                # self.plot_explore_edge(new)
+                if is_rewiring:
+                    self.rewire(near_by_vertices, parent, new)
+                self.plot_explore_edge(new)
             
-            if self.check_goal(new):
+            if self.check_goal(new) and (best_node is None or best_node.cost > new.cost):
                 self.is_goal = True
-                goal_node = new
-                # print(f"Find path!")
-                # break
+                best_node = new
+                if is_break:
+                    print(f"Find path!")
+                    break
             
         if not self.is_goal:
             print(f"No path... more iteration")
 
-        return goal_node
+        return best_node
     
 
     def plot_explore_edge(self, new):
@@ -180,14 +184,14 @@ def plot_final_path(final_node):
 
     plt.plot(xlist[::-1], ylist[::-1], '-r')
 
-def run_rrt_star(seed=None, do_plot=True):
+def run_rrt_star(seed=None, do_plot=True, is_rewiring=True, is_break=False):
     if seed is not None:
         random.seed(seed)
         np.random.seed(seed)
 
     init_pos = (-15, -10)
-    # goal_pos = (7, 8)
-    goal_pos = (10, 15)
+    goal_pos = (7, 8)
+    # goal_pos = (10, 15)
     obstacleList = [
         (5, 5, 1), (3, 6, 2), (3, 8, 2),
         (3, 10, 2), (7, 5, 2), (9, 5, 2), 
@@ -202,17 +206,58 @@ def run_rrt_star(seed=None, do_plot=True):
         cspace_obj.plot()
 
     rrt = RRTStar(seed, init_pos, goal_pos, 1000, cspace_obj)
-    final_node = rrt.planning()
+    final_node = rrt.planning(is_rewiring=is_rewiring, is_break=is_break)
 
     return final_node, rrt 
 
+def test_rrt_star(seed=None, do_plot=True):
+    final_node, rrt = run_rrt_star(seed=seed, do_plot=do_plot)
+    path_x, path_y = [], []
+    node = final_node
+    while node is not None:
+        path_x.append(node.x)
+        path_y.append(node.y)
+        node = node.parent
+
+    path_x = path_x[::-1]
+    path_y = path_y[::-1]
+    plt.plot(path_x, path_y, "-g", alpha=0.5, linewidth=1.5, label=f"original (cost: {final_node.cost:.2f})")
+
+    final_node, rrt = run_rrt_star(seed=seed, do_plot=do_plot, is_rewiring=False)
+    path_x, path_y = [], []
+    node = final_node
+    while node is not None:
+        path_x.append(node.x)
+        path_y.append(node.y)
+        node = node.parent
+
+    path_x = path_x[::-1]
+    path_y = path_y[::-1]
+    plt.plot(path_x, path_y, "-r", alpha=0.5, linewidth=1.5, label=f"no rewire (cost: {final_node.cost:.2f})")
+
+    final_node, rrt = run_rrt_star(seed=seed, do_plot=do_plot, is_break=True)
+    path_x, path_y = [], []
+    node = final_node
+    while node is not None:
+        path_x.append(node.x)
+        path_y.append(node.y)
+        node = node.parent
+
+    path_x = path_x[::-1]
+    path_y = path_y[::-1]
+    plt.plot(path_x, path_y, "-b", alpha=0.5, linewidth=1.5, label=f"break (cost: {final_node.cost:.2f})")
+
+
+        
+
+
 if __name__ == "__main__":
-    num_runs = 5
+    num_runs = 1
     results = []
 
 
     for i in range(num_runs):
-        seed = i * 10 
+        seed = 0
         final_node, rrt = run_rrt_star(seed=seed, do_plot=True)
         results.append(final_node.cost)
 
@@ -226,24 +271,30 @@ if __name__ == "__main__":
         print(f"{i+1} step done")
         path_x = path_x[::-1]
         path_y = path_y[::-1]
-        plt.plot(path_x, path_y, "-", zorder=2, linewidth=1.5)
+        plt.plot(path_x, path_y, "-r", zorder=2, linewidth=1.5)
 
         plt.title("RRT* multiple runs")
         plt.axis("equal")
         plt.pause(0.001)
-    plt.title("RRT* multiple runs")
-    plt.axis("equal")
-    plt.show()
-    print("final costs:", results)
-    x = list(range(num_runs))
-    plt.plot(x, results, linewidth=2, marker='o')
-    plt.title("RRT-star Costs", fontsize=14)
-    plt.xlabel("Iteration", fontsize=10)
-    plt.ylabel("Cost", fontsize=10)
-    plt.axis("equal")
 
-    plt.grid(True, linestyle='--', alpha=0.6)
-    plt.tight_layout()
+    # test_rrt_star(83, True)
+    # plt.legend()
+    plt.grid(True, linestyle="--", alpha=0.4)
+    plt.title("RRT*")
+    # plt.title("RRT* original, no rewire, break (seed=30)")
+    plt.axis("equal")
     plt.show()
+
+    # print("final costs:", results)
+    # x = list(range(num_runs))
+    # plt.plot(x, results, linewidth=2, marker='o')
+    # plt.title("RRT-star Costs", fontsize=14)
+    # plt.xlabel("Iteration", fontsize=10)
+    # plt.ylabel("Cost", fontsize=10)
+    # plt.axis("equal")
+
+    # plt.grid(True, linestyle='--', alpha=0.6)
+    # plt.tight_layout()
+    # plt.show()
 
 

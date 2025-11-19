@@ -24,9 +24,9 @@ class RRT:
 
         self.paths = []
 
-        # if self.do_plot:
-            # plt.plot(self.init_x, self.init_y, 'ob')
-            # plt.plot(self.goal_x, self.goal_y, 'xr')
+        if self.do_plot:
+            plt.plot(self.init_x, self.init_y, 'ob')
+            plt.plot(self.goal_x, self.goal_y, 'xr')
     
 
     def check_goal(self, curr):
@@ -63,7 +63,7 @@ class RRT:
         new_x = near.x + self.expand_size * np.cos(theta)
         new_y = near.y + self.expand_size * np.sin(theta)
         new_cost = near.cost + self.expand_size
-        return Node((new_x, new_y), parent=near, cost=self.expand_size)
+        return Node((new_x, new_y), parent=near, cost=new_cost)
     
     def is_collision(self, node):
         is_outside = node.x < self.cspace.min_x or node.x > self.cspace.max_x or node.y < self.cspace.min_y  or node.y > self.cspace.max_y
@@ -91,9 +91,6 @@ class RRT:
 
             if self.is_collision(new):
                 continue
-
-            if new.parent:
-                new.cost += new.parent.cost
 
             self.paths.append(new)
             self.plot_explore_edge(near, new)
@@ -141,8 +138,8 @@ def run_rrt(iter_num=1000, seed=None, do_plot=True):
         np.random.seed(seed)
 
     init_pos = (-15, -10)
-    # goal_pos = (7, 8)
-    goal_pos = (10, 15)
+    goal_pos = (7, 8)
+    # goal_pos = (10, 15)
     obstacleList = [
         (5, 5, 1), (3, 6, 2), (3, 8, 2),
         (3, 10, 2), (7, 5, 2), (9, 5, 2), 
@@ -167,7 +164,7 @@ def run_rrt(iter_num=1000, seed=None, do_plot=True):
 
 
 if __name__ == "__main__":
-    num_runs = 5
+    num_runs = 1
     seeds = []
     results = []
 

@@ -27,6 +27,7 @@ rrt_star = load_rrt_star_module()
 
 
 def collect_costs(num_runs=100, iter_num=1000, base_seed=0, seed_gap=10):
+    steps = [i+1 for i in range(num_runs)]
     seeds = [base_seed + i * seed_gap for i in range(num_runs)]
     rrt_costs = []
     rrt_star_costs = []
@@ -50,7 +51,7 @@ def collect_costs(num_runs=100, iter_num=1000, base_seed=0, seed_gap=10):
 
     print() 
 
-    return seeds, rrt_costs, rrt_star_costs
+    return steps, rrt_costs, rrt_star_costs
 
 
 def compute_stats(costs):
@@ -132,8 +133,7 @@ def plot_histograms(rrt_costs, rrt_star_costs, rrt_stats, rrt_star_stats, bins=1
 
 
 if __name__ == "__main__":
-    seeds, rrt_costs, rrt_star_costs = collect_costs(num_runs=1000)
-    print("Seeds      :", seeds)
+    steps, rrt_costs, rrt_star_costs = collect_costs(num_runs=200)
     print("RRT costs  :", rrt_costs)
     print("RRT* costs :", rrt_star_costs)
 
@@ -143,5 +143,5 @@ if __name__ == "__main__":
     print(format_stats("RRT ", rrt_stats))
     print(format_stats("RRT*", rrt_star_stats))
 
-    plot_costs(seeds, rrt_costs, rrt_star_costs, rrt_stats, rrt_star_stats)
+    plot_costs(steps, rrt_costs, rrt_star_costs, rrt_stats, rrt_star_stats)
     plot_histograms(rrt_costs, rrt_star_costs, rrt_stats, rrt_star_stats)
