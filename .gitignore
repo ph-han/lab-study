@@ -7,3 +7,21 @@ example
 paper
 marp
 .vscode
+
+# uv / Python venv
+.venv/
+.uv/
+
+# Python bytecode / 캐시
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+
+# 환경 변수 파일
+.env
+.env.*
+
