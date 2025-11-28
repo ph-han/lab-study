@@ -2,6 +2,7 @@ import csv
 import random
 import numpy as np
 from PIL import Image
+from astar import AStar
 
 DATASET_ROOT_SRC = "./dataset/"
 
@@ -18,14 +19,11 @@ def gen_meta_file():
 
 META_FILES = gen_meta_file()
 
-def astar(map, clearance, step_size):
-    pass
-
 def map_generator(seed, x_size, y_size):
     random.seed(seed)
     np.random.seed(seed)
 
-    human_visual = True
+    human_visual = False
 
     map_list = []
     ori_map_data = np.zeros((x_size, y_size), dtype=np.uint8)
@@ -50,7 +48,7 @@ def map_generator(seed, x_size, y_size):
     # set random start/goal point (12 diff)
     for _ in range(12):
         map_data = ori_map_data.copy()
-        min_dist = random.randint(5, 150)
+        min_dist = random.randint(35, 100)
         start_x = random.randint(1, x_size - 2)
         start_y = random.randint(1, y_size - 2)
         while map_data[start_y, start_x] != 0:
@@ -72,32 +70,44 @@ def map_generator(seed, x_size, y_size):
 
     return map_list
 
-def get_random_dataset_path():
-    p = random.random()
-    if p < 0.8:
-        path = "train"
-    elif p < 0.9:
-        path = "valid"
-    else:
-        path = "test"
+def make_split_map(total_size: int, seed: int = 42):
+    random.seed(seed)
+    indices = list(range(total_size))
+    random.shuffle(indices)
 
-    return path
+    n_train = total_size * 8 // 10
+    n_valid = total_size * 1 // 10
 
-def data2img(idx, data):
-    split_path = get_random_dataset_path()
+    idx2split = {}
+    for i in indices[:n_train]:
+        idx2split[i] = "train"
+    for i in indices[n_train:n_train + n_valid]:
+        idx2split[i] = "valid"
+    for i in indices[n_train + n_valid:]:
+        idx2split[i] = "test"
+    return idx2split
+
+def get_dataset_path(idx: int, split_map: dict) -> str:
+    return split_map[idx]
+
+def data2img(idx, data, split_map):
+    split_path = get_dataset_path(idx, split_map)
     save_path = DATASET_ROOT_SRC + split_path
     _, meta_csv = META_FILES[split_path]
 
     map_img = Image.fromarray(data, mode='L')
     map_img.save(f'{save_path}/maps/{idx:06d}.png')
-
+    print(f"{idx}th map saved")
 
     id = 0
     for c in [1, 2, 4, 6]:
         for s in [1, 2, 4, 6]:
-            # gt_data = astar(data, c, s)
-            # gt_img = Image.fromarray(gt_data, mode='L')
-            # gt_img.save(f'{save_path}/gts/{idx:06d}_{id}.png')
+            gt_astar = AStar(data, c, s)
+            gt_data, _, _ = gt_astar.planning()
+            if gt_data is None:
+                continue
+            gt_img = Image.fromarray(gt_data, mode='L')
+            gt_img.save(f'{save_path}/gts/{idx:06d}_{id}.png')
             meta_csv.writerow([
                 idx, id, c, s, 
                 f'{save_path}/maps/{idx:06d}.png', 
@@ -106,15 +116,16 @@ def data2img(idx, data):
             id += 1
 
 def main():
-    seeds = list(range(1, 5577))
+    seeds = list(range(1, 10000))
     x_size = 201
     y_size = 201
 
     base_idx = 0
+    split_map = make_split_map(10000 * 12)
     for seed in seeds:
         map_data_list = map_generator(seed, x_size=x_size, y_size=y_size)
         for idx, map_data in enumerate(map_data_list):
-            data2img(base_idx + idx, map_data)
+            data2img(base_idx + idx, map_data, split_map)
         base_idx += len(map_data_list)
 
     for f, _ in META_FILES.values():
