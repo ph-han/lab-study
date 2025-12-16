@@ -14,12 +14,17 @@ for x in range(x_size):
 # set random obstacles
 for x in range(x_size):
     for y in range(y_size):
-        if (x == 65 or x == 64 or x==66 or x == 63 or x == 68 or x==67) and y > 100:
+        if x in list(range(40, 80)) and y > 80:
             ori_map_data[y, x] = 1
 
 for x in range(x_size):
     for y in range(y_size):
-        if (x == 130 or x == 131 or x == 129 or x == 128 or x == 132 or x == 133) and y <= 100:
+        if x in list(range(130, 160)) and y <= 100:
+            ori_map_data[y, x] = 1
+
+for x in range(x_size):
+    for y in range(y_size):
+        if x in list(range(80, 135)) and y in list(range(130, 150)):
             ori_map_data[y, x] = 1
 
 # set random start/goal point (12 diff)
@@ -29,4 +34,4 @@ ori_map_data[start_y, start_x] = 2
 ori_map_data[goal_y, goal_x] = 3
 
 map_img = Image.fromarray(ori_map_data, mode='L')
-map_img.save(f'./dataset/test/maps/custom_map.png')
+map_img.save(f'./dataset/test/maps/custom_map5.png')

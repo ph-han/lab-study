@@ -72,12 +72,15 @@ class NeuralRRTStarDataset(Dataset):
 
         # gt는 그대로 단일 채널
         gt_tensor = torch.from_numpy(gt_numpy).unsqueeze(0).float()
+        reconst_gt = np.zeros_like(map_numpy, dtype=np.float32)
+        reconst_gt[map_numpy == 1] = 1.0
+        reconst_gt = torch.from_numpy(reconst_gt).unsqueeze(0).float()
 
         clearance = self.clearance_list[idx]
         step_size = self.step_size_list[idx]
         SC_tensor = torch.tensor([clearance, step_size], dtype=torch.float32)
 
-        return {'input_map': map_tensor, 'input_sc': SC_tensor, 'gt': gt_tensor}
+        return {'input_map': map_tensor, 'input_sc': SC_tensor, 'gt': gt_tensor, 'reconst_gt': reconst_gt}
 
     
 
@@ -157,6 +160,8 @@ class NeuralRRTStarNet(nn.Module):
 
         self.out_conv = nn.Conv2d(64, 1, kernel_size=1)
 
+        self.reconst_conv = nn.Conv2d(64, 1, kernel_size=1)
+
     def attribute_encode(self, x):
         fc1 = F.relu(self.attribute_fc1(x))
         fc2 = F.relu(self.attribute_fc2(fc1))
@@ -195,7 +200,8 @@ class NeuralRRTStarNet(nn.Module):
                             mode="bilinear", align_corners=False)
         
         out = F.sigmoid(self.out_conv(f_d))
-        return out
+        reconst = torch.sigmoid(self.reconst_conv(f_d))
+        return out, reconst
         
 def eval(net, dataloader):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -213,12 +219,14 @@ def eval(net, dataloader):
             input_map = batch['input_map'].to(device)
             input_sc  = batch['input_sc'].to(device)
             gt        = batch['gt'].to(device)
+            reconst_gt = batch['reconst_gt'].to(device)
 
-            out = net(input_map, input_sc)
-            loss = loss_fn(out, gt)
+
+            out, reconst = net(input_map, input_sc)
+            loss = loss_fn(out, gt) + 0.5 * loss_fn(reconst, reconst_gt)
             total_loss += loss.item()
 
-            pred = torch.sigmoid(out)
+            pred = out
             binary = (pred > 0.5).float()
 
             inter = (binary * gt).sum(dim=(1,2,3))
@@ -259,10 +267,12 @@ def train(dataloader, net, epoch, num_epochs):
         input_map = batch['input_map'].to(device)
         input_sc = batch['input_sc'].to(device)
         gt = batch['gt'].to(device)
+        reconst_gt = batch['reconst_gt'].to(device)
+
         optimizer.zero_grad()
 
-        output = net(input_map, input_sc)
-        loss = loss_fn(output, gt)
+        output, reconst = net(input_map, input_sc)
+        loss = loss_fn(output, gt) + 0.5 * loss_fn(reconst, reconst_gt)
 
         loss.backward()
         optimizer.step()
@@ -283,7 +293,7 @@ if __name__ == "__main__":
     # dataset
     train_dataset = NeuralRRTStarDataset(split="train", transform=resize)
     valid_dataset = NeuralRRTStarDataset(split="valid", transform=resize)
-    test_dataset = NeuralRRTStarDataset(split="test", transform=resize)
+    # test_dataset = NeuralRRTStarDataset(split="test", transform=resize)
 
     # print(len(train_dataset))
     # it = iter(train_dataset)
@@ -292,10 +302,10 @@ if __name__ == "__main__":
     # print(next(it)['gt'].shape)
 
     # dataloader
-    batch_size = 128
+    batch_size = 115
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     valid_dataloader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=False)
-    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+    # test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     # batch_iterator = iter(train_dataloader)
     # batch = next(batch_iterator)  
@@ -309,15 +319,19 @@ if __name__ == "__main__":
     # print("Output min/max:", out.min().item(), out.max().item())
 
     train_loss_list = []
-    num_epochs=100
+    num_epochs=35
     best_loss = float('inf')
+    best_iou = float('-inf')
     for epoch in range(num_epochs):
         loss_list = train(train_dataloader, net, epoch, num_epochs)
         train_loss_list.append(loss_list)
         val_loss, val_iou, val_acc = eval(net, valid_dataloader)
+        if val_iou > best_iou:
+            best_iou = val_iou
+            torch.save(net.state_dict(), "best_neural_rrt_star_net_iou.pth")
         if val_loss < best_loss:
             best_loss = val_loss
-            torch.save(net.state_dict(), "best_neural_rrt_star_net.pth")
+            torch.save(net.state_dict(), "best_neural_rrt_star_net_loss.pth")
         print(f"[Val] Epoch {epoch+1} | Loss={val_loss:.4f}, IoU={val_iou:.4f}, Acc={val_acc:.4f}")
 
     # torch.save(net.state_dict(), "neural_rrt_star_net.pth")

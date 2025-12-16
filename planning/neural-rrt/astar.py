@@ -167,7 +167,7 @@ if __name__ == "__main__":
     # 1. Load a map image for testing
     print("Start A* path planning simulation with a map image...")
     # 테스트하고 싶은 맵 이미지 파일 경로를 지정하세요.
-    map_path = "./dataset/train/maps/007118.png" 
+    map_path = "./dataset/test/maps/custom_map5.png" 
     try:
         map_image = Image.open(map_path).convert('L') # Grayscale로 열기
         map_data = np.array(map_image)
@@ -178,8 +178,8 @@ if __name__ == "__main__":
 
 
     # 2. Set parameters and run A*
-    clearance = 4
-    step_size = 2
+    clearance = 1
+    step_size = 1
     a_star = AStar(map_data, clearance, step_size)
     plt.figure(figsize=(8,8))
         # Draw map, obstacles, start and goal
@@ -187,9 +187,7 @@ if __name__ == "__main__":
     plt.plot(a_star.sx, a_star.sy, "og", label='Start')
     plt.plot(a_star.gx, a_star.gy, "xb", label='Goal')
     plt.grid(True)
-    plt.axis("equal")
-    plt.xlabel("X-axis")
-    plt.ylabel("Y-axis")
+    plt.axis("off")
     _, rx, ry = a_star.planning()
 
     # 3. Visualize the result
