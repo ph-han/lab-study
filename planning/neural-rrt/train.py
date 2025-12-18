@@ -11,6 +11,7 @@ import pandas as pd
 from PIL import Image
 from tqdm.auto import tqdm
 from resnet import ResNet50
+import cv2
 
 import matplotlib.pyplot as plt
 
@@ -41,6 +42,11 @@ class NeuralRRTStarDataset(Dataset):
             self.map_path_list.append(row[1]["map_path"])
             self.gt_path_list.append(row[1]["gt_path"])
 
+    def soft_gt_from_blur(self, binary_mask: np.ndarray, ksize: int = 21, sigma: float = 5.0):
+        m = (binary_mask > 0).astype(np.float32)
+        soft = cv2.GaussianBlur(m, (ksize, ksize), sigmaX=sigma)
+        soft = soft / (soft.max() + 1e-8)
+        return soft.astype(np.float32)
 
     def __len__(self):
         return len(self.meta_data)
@@ -70,8 +76,9 @@ class NeuralRRTStarDataset(Dataset):
         rgb = rgb.transpose(2, 0, 1)
         map_tensor = torch.from_numpy(rgb)
 
-        # gt는 그대로 단일 채널
-        gt_tensor = torch.from_numpy(gt_numpy).unsqueeze(0).float()
+        gt_soft = self.soft_gt_from_blur(gt_numpy, ksize=21, sigma=5.0)  # (H,W) float32 0~1
+        gt_tensor = torch.from_numpy(gt_soft).unsqueeze(0).float() 
+
         reconst_gt = np.zeros_like(map_numpy, dtype=np.float32)
         reconst_gt[map_numpy == 1] = 1.0
         reconst_gt = torch.from_numpy(reconst_gt).unsqueeze(0).float()
@@ -319,7 +326,7 @@ if __name__ == "__main__":
     # print("Output min/max:", out.min().item(), out.max().item())
 
     train_loss_list = []
-    num_epochs=35
+    num_epochs=10
     best_loss = float('inf')
     best_iou = float('-inf')
     for epoch in range(num_epochs):

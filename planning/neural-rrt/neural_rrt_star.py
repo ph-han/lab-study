@@ -93,7 +93,7 @@ class NeuralRRTStar:
                 plt.cla()
                 im = plt.imshow(im_np, interpolation='nearest')
                 alpha = out.copy()
-                alpha[out < 0.5] = 0.0
+                alpha[out < 1e-3] = 0.0
                 alpha = np.clip(alpha * 2.0, 0.0, 0.8)
 
                 plt.imshow(out, cmap='plasma', alpha=alpha, interpolation='bilinear')
@@ -113,9 +113,6 @@ class NeuralRRTStar:
         h, w = self.non_uniform_map.shape
         flat = self.non_uniform_map.reshape(-1)
         flat[flat < threshold] = 0
-
-        print("sum:", flat.sum())
-        print("min:", flat.min(), "max:", flat.max())
 
         if flat.sum() == 0:
             flat = np.ones_like(flat)
@@ -137,7 +134,7 @@ class NeuralRRTStar:
         if self.is_neural_mode and random.random() > 0.5:
             y, x = self.sample_from_non_uniform_map()
         else:
-            if random.randint(0, 100) > 10:
+            if random.random() > 0.1:
                 x = random.uniform(1, 224)
                 y = random.uniform(1, 224)
             else:
@@ -308,15 +305,15 @@ if __name__ == "__main__":
     set_seed(1)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = NeuralRRTStarNet().to(device)
-    model.load_state_dict(torch.load("best_neural_rrt_star_net_loss.pth"))
+    model.load_state_dict(torch.load("best_neural_rrt_star_net_iou.pth"))
     model.eval()
     print("Using device:", device)
     plt.cla()
     map_path = "./dataset/test/maps/000726.png"
     # map_path = "./dataset/test/maps/000455.png"
-    # map_path = "./dataset/test/maps/custom_map.png"
-    neural_planner = NeuralRRTStar(42, 1, 4, 7000, map_path,
-                                   is_neural_mode=neural_mode, expand_size=4)
+    # map_path = "./dataset/test/maps/custom_map5.png"
+    neural_planner = NeuralRRTStar(42, 2, 6, 7000, map_path,
+                                   is_neural_mode=neural_mode, expand_size=6)
     neural_node, tot_time_neural = neural_planner.planning(model=model, device=device, is_rewiring=True, is_break=True, is_draw=True)
     print(f"total time: {tot_time_neural:.6f}sec, node: {len(neural_planner.paths)}, cost: {neural_node.cost:.2f}")
     
