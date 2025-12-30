@@ -15,7 +15,10 @@ from PIL import Image
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
 model = NeuralRRTStarNet().to(device)
-model.load_state_dict(torch.load("best_neural_rrt_star_net.pth"))
+state = torch.load("best_neural_rrt_star_net_iou.pth", map_location="cpu")
+if next(iter(state)).startswith("module."):
+    state = {k.replace("module.", "", 1): v for k, v in state.items()}
+model.load_state_dict(state)
 model.eval()
 
 #transform
@@ -39,14 +42,14 @@ resize = transforms.Resize((224, 224), interpolation=InterpolationMode.NEAREST)
 
 
 test_dataset = NeuralRRTStarDataset(split="test", transform=resize)
-test_dataloader = DataLoader(test_dataset, batch_size=128, shuffle=False)
+test_dataloader = DataLoader(test_dataset, batch_size=128, shuffle=False, num_workers=4)
 
 for batch_idx, data in enumerate(tqdm(test_dataloader, desc="Testing..")):
     input_map = data['input_map'].to(device)   # [B,3,H,W]
     input_sc  = data['input_sc'].to(device)
 
     with torch.no_grad():
-        output = model(input_map, input_sc)    # [B,1,H,W]
+        output = model(input_map, input_sc, return_recon=False)    # [B,1,H,W]
 
     B = input_map.size(0)
     for b in range(B):

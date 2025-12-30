@@ -68,7 +68,7 @@ class NeuralRRTStar:
         if self.is_neural_mode:
             with torch.no_grad():
                 start = time.perf_counter()
-                output, _ = model(input_map, input_sc)
+                output = model(input_map, input_sc, return_recon=False)
                 end = time.perf_counter()
                 total_time = end - start
 
@@ -239,7 +239,7 @@ class NeuralRRTStar:
         else:
             _, gpu_time = self.neural_model(None, None, is_draw)
             self.non_uniform_map = np.ones_like(self.grid_map, dtype=np.float32)
-        # return None, None
+        return None, None
         self.prepare_non_uniform()
         init_node = Node((self.init_x, self.init_y))
         best_node = None
@@ -302,20 +302,23 @@ if __name__ == "__main__":
     neural_mode = True
     plt.title("Neural RRT Star")
     plt.axis('off')
-    set_seed(1)
+    set_seed(0)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = NeuralRRTStarNet().to(device)
-    model.load_state_dict(torch.load("best_neural_rrt_star_net_iou.pth"))
+    state = torch.load("best_neural_rrt_star_net_iou.pth", map_location="cpu")
+    if next(iter(state)).startswith("module."):
+        state = {k.replace("module.", "", 1): v for k, v in state.items()}
+    model.load_state_dict(state)
     model.eval()
     print("Using device:", device)
     plt.cla()
-    map_path = "./dataset/test/maps/000726.png"
-    # map_path = "./dataset/test/maps/000455.png"
-    # map_path = "./dataset/test/maps/custom_map5.png"
-    neural_planner = NeuralRRTStar(42, 2, 6, 7000, map_path,
-                                   is_neural_mode=neural_mode, expand_size=6)
+    # map_path = "./dataset/test/maps/000726.png"
+    map_path = "./dataset/test/maps/000455.png"
+    map_path = "./dataset/test/maps/custom_map.png"
+    neural_planner = NeuralRRTStar(42, 1, 2, 7000, map_path,
+                                   is_neural_mode=neural_mode, expand_size=2)
     neural_node, tot_time_neural = neural_planner.planning(model=model, device=device, is_rewiring=True, is_break=True, is_draw=True)
-    print(f"total time: {tot_time_neural:.6f}sec, node: {len(neural_planner.paths)}, cost: {neural_node.cost:.2f}")
+    # print(f"total time: {tot_time_neural:.6f}sec, node: {len(neural_planner.paths)}, cost: {neural_node.cost:.2f}")
     
     if neural_node:
         plot_final_path(neural_node)

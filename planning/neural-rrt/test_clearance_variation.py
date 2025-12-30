@@ -8,7 +8,10 @@ from train import NeuralRRTStarNet
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = NeuralRRTStarNet().to(device)
-    model.load_state_dict(torch.load("best_neural_rrt_star_net_iou.pth"))
+    state = torch.load("best_neural_rrt_star_net_iou.pth", map_location="cpu")
+    if next(iter(state)).startswith("module."):
+        state = {k.replace("module.", "", 1): v for k, v in state.items()}
+    model.load_state_dict(state)
     model.eval()
 
     seeds = list(range(0, 1000))

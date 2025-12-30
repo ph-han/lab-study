@@ -43,7 +43,7 @@ def map_generator(seed, x_size, y_size):
         half_size = obs_size // 2
         for x in range(obs_x - half_size, obs_x + half_size + 1):
             for y in range(obs_y - half_size, obs_y + half_size + 1):
-                ori_map_data[x, y] = 1 * (80 if human_visual else 1)
+                ori_map_data[y, x] = 1 * (80 if human_visual else 1)
 
     # set random start/goal point (12 diff)
     for _ in range(12):
@@ -106,7 +106,7 @@ def data2img(idx, data, split_map):
             gt_data, _, _ = gt_astar.planning()
             if gt_data is None:
                 continue
-            gt_img = Image.fromarray(gt_data, mode='L')
+            gt_img = Image.fromarray((gt_data * 255).astype(np.uint8), mode='L')
             gt_img.save(f'{save_path}/gts/{idx:06d}_{id}.png')
             meta_csv.writerow([
                 idx, id, c, s, 

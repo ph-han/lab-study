@@ -42,12 +42,6 @@ class NeuralRRTStarDataset(Dataset):
             self.map_path_list.append(row[1]["map_path"])
             self.gt_path_list.append(row[1]["gt_path"])
 
-    def soft_gt_from_blur(self, binary_mask: np.ndarray, ksize: int = 21, sigma: float = 5.0):
-        m = (binary_mask > 0).astype(np.float32)
-        soft = cv2.GaussianBlur(m, (ksize, ksize), sigmaX=sigma)
-        soft = soft / (soft.max() + 1e-8)
-        return soft.astype(np.float32)
-
     def __len__(self):
         return len(self.meta_data)
 
@@ -76,8 +70,7 @@ class NeuralRRTStarDataset(Dataset):
         rgb = rgb.transpose(2, 0, 1)
         map_tensor = torch.from_numpy(rgb)
 
-        gt_soft = self.soft_gt_from_blur(gt_numpy, ksize=21, sigma=5.0)  # (H,W) float32 0~1
-        gt_tensor = torch.from_numpy(gt_soft).unsqueeze(0).float() 
+        gt_tensor = torch.from_numpy(gt_numpy).unsqueeze(0).float() 
 
         reconst_gt = np.zeros_like(map_numpy, dtype=np.float32)
         reconst_gt[map_numpy == 1] = 1.0
@@ -310,8 +303,8 @@ if __name__ == "__main__":
 
     # dataloader
     batch_size = 115
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    valid_dataloader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=False)
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
+    valid_dataloader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=False, num_workers=4)
     # test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     # batch_iterator = iter(train_dataloader)

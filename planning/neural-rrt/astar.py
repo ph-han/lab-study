@@ -1,6 +1,7 @@
 import math
 import matplotlib.pyplot as plt
 import numpy as np
+import cv2
 from PIL import Image
 
 class Node:
@@ -125,14 +126,26 @@ class AStar:
     def get_gt_map(self, rx, ry):
         if not rx:
             return None, rx, ry
-        gt_map = np.zeros((self.y_width, self.x_width), dtype=np.uint8)
-        
-        for x, y in zip(rx, ry):
-            for i in range(x - 1, x + 2):
-                for j in range(y - 1, y + 2):
-                    if 1 <= i < self.x_width - 1 and 1 <= j < self.y_width - 1:
-                        gt_map[j, i] = 1
-        return gt_map, rx, ry
+        thin = np.zeros((self.y_width, self.x_width), dtype=np.uint8)
+
+        pts = list(zip(rx, ry))
+        for (x0, y0), (x1, y1) in zip(pts[:-1], pts[1:]):
+            cv2.line(
+                thin,
+                (int(x0), int(y0)),  # cv2 uses (x, y) = (col, row)
+                (int(x1), int(y1)),
+                color=1,
+                thickness=1,
+            )
+
+        thin[self.grid_map == 1] = 0
+
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+        thick = cv2.dilate(thin, kernel, iterations=1)
+        thick[self.grid_map == 1] = 0
+
+        thick = (thick > 0).astype(np.uint8)
+        return thick, rx, ry
     
     def heuristic(self, gx, gy, nx, ny):
         return np.hypot(gx - nx, gy - ny)
@@ -200,6 +213,4 @@ if __name__ == "__main__":
         plt.show()
     else:
         print("Path not found")
-
-
 

@@ -9,13 +9,16 @@ from train import NeuralRRTStarNet
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = NeuralRRTStarNet().to(device)
-    model.load_state_dict(torch.load("best_neural_rrt_star_net_iou.pth"))
+    state = torch.load("best_neural_rrt_star_net_iou.pth", map_location="cpu")
+    if next(iter(state)).startswith("module."):
+        state = {k.replace("module.", "", 1): v for k, v in state.items()}
+    model.load_state_dict(state)
     model.eval()
 
     seeds = list(range(0, 1000))
     map_path = "./dataset/test/maps/000726.png"
 
-    for ss in tqdm([1, 2, 4, 6], desc="Testing step size..."):
+    for ss in tqdm([6, 4, 2, 1], desc="Testing step size..."):
         neural_stats = {"nodes": [], "cost": [], "time": [], "success": 0}
         rrt_stats = {"nodes": [], "cost": [], "time": [], "success": 0}
 
