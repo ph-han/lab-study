@@ -14,3 +14,8 @@ dependencies = [
     "torchvision>=0.24.1",
     "tqdm>=4.67.1",
 ]
+
+[tool.uv.workspace]
+members = [
+    "resarch/RL-Guided-RRT",
+]
