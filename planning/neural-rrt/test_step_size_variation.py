@@ -2,14 +2,14 @@ import torch
 from tqdm.auto import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
-from neural_rrt_star import NeuralRRTStar, set_seed
-from train import NeuralRRTStarNet
+from neural_rrt_star2 import NeuralRRTStar, set_seed
+from train_recon2 import NeuralRRTStarNet
 
 
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = NeuralRRTStarNet().to(device)
-    state = torch.load("best_neural_rrt_star_net_iou.pth", map_location="cpu")
+    state = torch.load("best_neural_rrt_star_net_iou_2.pth", map_location="cpu")
     if next(iter(state)).startswith("module."):
         state = {k.replace("module.", "", 1): v for k, v in state.items()}
     model.load_state_dict(state)

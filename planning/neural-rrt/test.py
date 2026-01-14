@@ -7,7 +7,7 @@ from torchvision.transforms import InterpolationMode
 from PIL import Image
 import time
 import os
-from train_recon import NeuralRRTStarNet
+from train import NeuralRRTStarNet
 from tqdm.auto import tqdm
 
 
@@ -86,7 +86,6 @@ class NeuralRRTStar:
         self.goal_y, self.goal_x = goal_coords[0]
 
         self.plot_map = im_np.copy()
-        # draw map info and predicted probaility
         if self.is_neural_mode:
             out = output.squeeze().squeeze().cpu().numpy()
             reconst = recon.squeeze().squeeze().cpu().numpy()
@@ -321,8 +320,8 @@ if __name__ == "__main__":
     set_seed(0)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = NeuralRRTStarNet().to(device)
-    state = torch.load("best_neural_rrt_star_net_iou_2.pth", map_location="cpu")
-    if next(iter(state)).startswith("module."):     
+    state = torch.load("best_neural_rrt_star_net_iou.pth", map_location="cpu")
+    if next(iter(state)).startswith("module."):
         state = {k.replace("module.", "", 1): v for k, v in state.items()}
     model.load_state_dict(state)
     model.eval()

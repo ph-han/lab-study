@@ -1,5 +1,6 @@
 import math
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 import numpy as np
 import cv2
 from PIL import Image
@@ -140,13 +141,24 @@ class AStar:
 
         thin[self.grid_map == 1] = 0
 
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (1,1))
         thick = cv2.dilate(thin, kernel, iterations=1)
         thick[self.grid_map == 1] = 0
 
         thick = (thick > 0).astype(np.uint8)
         return thick, rx, ry
     
+    def get_sdf(self, rx, ry):
+        path_mask = np.zeros_like(self.grid_map, dtype=np.uint8)
+        if rx and ry:
+            points = np.column_stack((rx, ry)).astype(np.int32)
+            cv2.polylines(path_mask, [points], isClosed=False, color=1, thickness=1)
+
+        dist_path = cv2.distanceTransform((1 - path_mask), cv2.DIST_L2, 5)
+        dist_obs = cv2.distanceTransform(self.grid_map.astype(np.uint8), cv2.DIST_L2, 5)
+        sdf = np.where(self.grid_map == 1, -dist_obs, dist_path)
+        return sdf
+
     def heuristic(self, gx, gy, nx, ny):
         return np.hypot(gx - nx, gy - ny)
 
@@ -180,7 +192,7 @@ if __name__ == "__main__":
     # 1. Load a map image for testing
     print("Start A* path planning simulation with a map image...")
     # 테스트하고 싶은 맵 이미지 파일 경로를 지정하세요.
-    map_path = "./dataset/test/maps/custom_map5.png" 
+    map_path = "./dataset/test/maps/custom_map.png" 
     try:
         map_image = Image.open(map_path).convert('L') # Grayscale로 열기
         map_data = np.array(map_image)
@@ -192,25 +204,35 @@ if __name__ == "__main__":
 
     # 2. Set parameters and run A*
     clearance = 1
-    step_size = 1
+    step_size = 2
     a_star = AStar(map_data, clearance, step_size)
-    plt.figure(figsize=(8,8))
+    gt_data, rx, ry = a_star.planning()
+
+    plt.figure(figsize=(14, 6))
+    plt.subplot(1, 2, 1)
+    plt.title("A* Path Planning")
         # Draw map, obstacles, start and goal
-    plt.imshow(map_data, cmap='gray_r', origin='lower')
+    plt.imshow(map_data, cmap='binary', vmin=0, vmax=1, origin='lower')
     plt.plot(a_star.sx, a_star.sy, "og", label='Start')
     plt.plot(a_star.gx, a_star.gy, "xb", label='Goal')
     plt.grid(True)
-    plt.axis("off")
-    _, rx, ry = a_star.planning()
 
     # 3. Visualize the result
     if rx: # if path is found
-        
-        
         # Draw path
         plt.plot(rx, ry, "-r", label='A* Path')
         plt.legend()
+        
+        plt.subplot(1, 2, 2)
+        plt.title("Generated SDF (Path=0, Obs<0, Free>0)")
+        sdf = a_star.get_sdf(rx, ry)
+        max_val = max(abs(sdf.min()), abs(sdf.max()))
+        
+        colors = ["red", "white", "blue"]
+        cmap = mcolors.LinearSegmentedColormap.from_list("SDF_Map", colors)
+        im = plt.imshow(sdf, cmap=cmap, vmin=-max_val, vmax=max_val, origin='lower')
+        plt.colorbar(im, label='SDF Value')
+        
         plt.show()
     else:
         print("Path not found")
-

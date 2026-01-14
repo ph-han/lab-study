@@ -89,7 +89,7 @@ if __name__ == "__main__":
     resize = transforms.Resize((224, 224), interpolation=InterpolationMode.NEAREST)
 
     dataset_root_path = "./dataset"
-    split = "train"   # or "valid", "test"
+    split = "test"   # or "valid", "test"
 
     ds = NeuralRRTStarDataset(dataset_root_path=dataset_root_path,
                               split=split,
