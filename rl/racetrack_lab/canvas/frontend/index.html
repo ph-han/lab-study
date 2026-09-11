@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Racetrack canvas</title>
+  <link rel="stylesheet" href="canvas.css" />
+</head>
+<body>
+  <div id="root">
+    <div id="stage">
+      <svg id="svg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg>
+      <div id="badges"></div>
+      <div id="hud" class="hud" hidden></div>
+      <div id="tip" class="tip" hidden></div>
+      <div id="empty" class="empty" hidden></div>
+    </div>
+
+    <div id="bar" class="bar">
+      <div class="btns">
+        <button id="b-reset" class="ib" title="Back to start" aria-label="Back to start">
+          <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+        </button>
+        <button id="b-prev" class="ib" title="Previous step" aria-label="Previous step">
+          <svg viewBox="0 0 24 24"><path d="M15.4 6.6 14 5.2 7.2 12l6.8 6.8 1.4-1.4L10 12z"/></svg>
+        </button>
+        <button id="b-play" class="ib play" title="Play" aria-label="Play">
+          <svg class="ic-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          <svg class="ic-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+        </button>
+        <button id="b-next" class="ib" title="Next step" aria-label="Next step">
+          <svg viewBox="0 0 24 24"><path d="M8.6 6.6 10 5.2l6.8 6.8-6.8 6.8-1.4-1.4L14 12z"/></svg>
+        </button>
+        <button id="b-end" class="ib" title="Jump to end" aria-label="Jump to end">
+          <svg viewBox="0 0 24 24"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg>
+        </button>
+      </div>
+      <input id="scrub" type="range" min="0" max="0" value="0" step="1" aria-label="Step" />
+      <div id="stepLabel" class="mono">step 0 / 0</div>
+      <button id="b-live" class="pill live" title="Resume following the live run" hidden>
+        <span class="livedot"></span>Back to live
+      </button>
+      <select id="speed" aria-label="Playback speed">
+        <option value="0.5">0.5×</option>
+        <option value="1" selected>1×</option>
+        <option value="2">2×</option>
+        <option value="4">4×</option>
+      </select>
+    </div>
+
+    <div id="iterbar" class="bar iter" hidden>
+      <div class="iter-title">Iteration</div>
+      <button id="i-prev" class="ib sm" title="Previous iteration" aria-label="Previous iteration">
+        <svg viewBox="0 0 24 24"><path d="M15.4 6.6 14 5.2 7.2 12l6.8 6.8 1.4-1.4L10 12z"/></svg>
+      </button>
+      <button id="i-play" class="ib sm play" title="Play iterations" aria-label="Play iterations">
+        <svg class="ic-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        <svg class="ic-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+      </button>
+      <button id="i-next" class="ib sm" title="Next iteration" aria-label="Next iteration">
+        <svg viewBox="0 0 24 24"><path d="M8.6 6.6 10 5.2l6.8 6.8-6.8 6.8-1.4-1.4L14 12z"/></svg>
+      </button>
+      <input id="iscrub" type="range" min="0" max="0" value="0" step="1" aria-label="Iteration" />
+      <div id="iterLabel" class="mono">0 / 0</div>
+    </div>
+
+    <div id="legend" class="legend"></div>
+  </div>
+  <script src="canvas.js"></script>
+</body>
+</html>
