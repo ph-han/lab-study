@@ -1,0 +1,41 @@
+{
+  "artboards": [
+    { "file": "CorridorA.dc.html", "title": "예제 A · 네 칸 복도", "x": 0, "y": 0, "w": 1440, "h": 660, "is_interactive": true },
+    { "file": "Main.dc.html", "title": "단계 1–3 · 한 칸 계산", "x": 1600, "y": 0, "w": 1440, "h": 940, "is_interactive": true },
+    { "file": "Improve.dc.html", "title": "단계 4–5 · 정책 개선", "x": 0, "y": 1140, "w": 1440, "h": 940, "is_interactive": true },
+    { "file": "ValueIteration.dc.html", "title": "단계 6 · 가치 반복", "x": 1600, "y": 1140, "w": 1440, "h": 940, "is_interactive": true },
+    { "file": "Rollout.dc.html", "title": "단계 7 · 이동 확인", "x": 0, "y": 2280, "w": 1440, "h": 940, "is_interactive": true },
+    { "file": "MyRun.dc.html", "title": "내 구현 살펴보기", "x": 1600, "y": 2280, "w": 1440, "h": 940, "is_interactive": true }
+  ],
+  "annotations": [
+    {
+      "id": "brief",
+      "x": 0,
+      "y": -230,
+      "w": 520,
+      "text": "REDESIGN_SPEC.md 기준 재설계 시안.\n화면의 모든 수치는 기획서 8.1 · 8.2 · 7.3절 fixture이고, 별도 스크립트로 표와 1e-12 이내 일치를 확인했습니다.\n실제 제품에서는 같은 자리를 계산 엔진의 기록으로 채웁니다."
+    },
+    {
+      "id": "row-a",
+      "x": 1600,
+      "y": -230,
+      "w": 460,
+      "text": "단계 1–3 · 핵심 화면.\n셀을 누르면 그 칸의 계산이 열리고, 행동 줄을 누르면 지도에 이동·보상·참조가 표시됩니다.\n[다음 계산] · [한 바퀴 계산]으로 동기식 갱신을 확인하세요."
+    },
+    {
+      "id": "row-b",
+      "x": 0,
+      "y": 1010,
+      "w": 460,
+      "text": "단계 4–6.\n평가에 쓰던 같은 표를 두고 집계만 바꿉니다.\n[정책 적용] 후에도 V가 그대로인 점, 가치 반복에서 두 지도가 같은 재료에서 나오는 점이 확인 대상입니다."
+    },
+    {
+      "id": "row-c",
+      "x": 0,
+      "y": 2150,
+      "w": 460,
+      "text": "단계 7과 두 번째 진입점.\n이동 확인은 계산 이후 별도 단계이고, 재생 중 V·π는 바뀌지 않습니다.\n오른쪽은 기록이 부족한 실행에서 무엇을 보여줄지 정한 화면입니다."
+    }
+  ],
+  "launch": { "view": "focused", "file": "Main.dc.html" }
+}

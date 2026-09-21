@@ -1,0 +1,449 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&family=Gothic+A1:wght@400;500;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+  <style>
+:root{
+  --paper:#F6F8FB; --card:#FFFFFF; --line:#E4E9F0; --soft:#F2F5F9;
+  --ink:#141C2B; --ink2:#5A6675; --ink3:#98A2B1;
+  --sel:#2563EB; --sel-soft:#EAF1FF;
+  --ref:#7C3AED; --ref-soft:#F3EDFF;
+  --rew:#B45309; --rew-soft:#FFF3E0;
+  --goal:#0E7C66; --goal-soft:#E4F5F0;
+  --shadow:0 1px 2px rgba(20,28,43,.04), 0 14px 34px rgba(20,28,43,.07);
+  --ui:"Nunito","Gothic A1","Malgun Gothic",system-ui,-apple-system,sans-serif;
+  --mono:"JetBrains Mono","Cascadia Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--ui);font-weight:700;-webkit-font-smoothing:antialiased}
+a{color:var(--sel);text-decoration:none}
+.m{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:700}
+.hid{display:none !important}
+
+/* ---- page frame ---------------------------------------------------------- */
+.page{min-height:100%;padding:24px 28px;display:flex;flex-direction:column;gap:14px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{font-size:19px;font-weight:800;letter-spacing:-.02em}
+.brand span{color:var(--ink3);font-size:12px;font-weight:800;margin-left:9px;letter-spacing:0}
+.tabs{display:flex;gap:4px;background:#E9EEF5;padding:4px;border-radius:999px}
+.tabs div{font-weight:800;font-size:13px;color:var(--ink3);padding:7px 15px;border-radius:999px}
+.tabs div.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(20,28,43,.14)}
+.dots{display:flex;align-items:center;gap:5px}
+.dt{width:26px;height:5px;border-radius:99px;background:#DDE4EC;transition:background .3s ease,width .3s ease}
+.dt.past{background:#AEBACA}
+.dt.on{background:var(--ink);width:44px}
+.dtl{font-size:12px;font-weight:800;color:var(--ink3);margin-left:10px}
+.ask{margin:0;font-size:27px;font-weight:800;letter-spacing:-.03em;line-height:1.25}
+.sub{font-size:13.5px;font-weight:700;color:var(--ink2);margin-top:6px;min-height:19px}
+.sub b{color:var(--ink)}
+.cols{display:flex;gap:16px;align-items:stretch}
+.card{background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow)}
+.chead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ctitle{font-size:10.5px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;color:var(--ink3)}
+.cnote{font-size:12px;font-weight:700;color:var(--ink3)}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;color:var(--ink2);background:#fff;border:1px solid var(--line);padding:5px 11px;border-radius:999px;white-space:nowrap}
+.chip.q{color:var(--sel);background:var(--sel-soft);border-color:#CBDDFF}
+.chip.p{color:var(--ref);background:var(--ref-soft);border-color:#E0D2FB}
+.chip.w{color:var(--rew);background:var(--rew-soft);border-color:#F5DFBE}
+.chip.g{color:var(--goal);background:var(--goal-soft);border-color:#BFE5DB}
+.chip.mock{color:#8A6A16;background:#FFF6D8;border-color:#F0E0A6}
+.seg{display:flex;gap:3px;background:#E9EEF5;padding:3px;border-radius:999px}
+.seg button{border:0;background:transparent;font-family:var(--ui);font-weight:800;font-size:12px;color:var(--ink2);padding:6px 13px;border-radius:999px;cursor:pointer}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(20,28,43,.16)}
+.btn{border:1px solid var(--line);background:#fff;font-family:var(--ui);font-weight:800;font-size:13.5px;color:var(--ink);padding:11px 19px;border-radius:999px;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.btn:hover{border-color:#CBD5E1;background:#FBFCFE}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn.primary:hover{background:#0B121E}
+.btn.off{opacity:.32;pointer-events:none}
+.foot{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.status{font-size:13px;font-weight:800;color:var(--ink2);display:flex;align-items:center;gap:9px}
+.pip{width:5px;height:5px;border-radius:50%;background:#C6CFDA}
+.live{width:7px;height:7px;border-radius:50%;background:#FF5D5D;animation:liveDot 1.1s ease-in-out infinite;display:inline-block}
+
+/* ---- grid ---------------------------------------------------------------- */
+.pane{background:var(--soft);border-radius:20px;padding:15px}
+.pane.act{background:#E9F0FB;box-shadow:0 0 0 2px #C3D6F5 inset}
+.grid{position:relative}
+.cell{position:absolute;border-radius:18px;border:1px solid rgba(20,28,43,.08);
+  transition:background .45s ease, box-shadow .2s ease}
+.cell.hit{cursor:pointer}
+.cell.hit:hover{box-shadow:0 0 0 2px #CBD5E1}
+.cell .val{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-weight:700;font-size:33px;letter-spacing:-.035em;color:var(--ink)}
+.cell .val.sm{font-size:23px;color:var(--ink2)}
+.cell .co{position:absolute;left:13px;bottom:9px;font-family:var(--mono);font-size:11px;font-weight:700;color:rgba(20,28,43,.34)}
+.cell .tag{position:absolute;left:12px;top:10px;font-size:10.5px;font-weight:800;color:rgba(20,28,43,.42)}
+.cell.sel{box-shadow:0 0 0 3px var(--sel), 0 14px 28px rgba(37,99,235,.2);z-index:3}
+.cell.ref{box-shadow:0 0 0 3px var(--ref);z-index:2;animation:ringPulse 1.1s ease-in-out infinite}
+.cell.next{box-shadow:0 0 0 2px #C3CEDC}
+.cell.pop{animation:cellPop .5s cubic-bezier(.34,1.4,.6,1)}
+.cell.goal{background:var(--goal-soft) !important;border-color:#BEE4DA}
+.cell .g{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.cell .g .n{font-size:30px;font-weight:800;color:var(--goal);line-height:1}
+.cell .g .s{font-size:12px;font-weight:800;color:var(--goal)}
+.cell .g .v{font-family:var(--mono);font-size:12px;font-weight:700;color:#4C8A7E}
+.newv{position:absolute;right:11px;top:11px;background:var(--sel);color:#fff;border-radius:999px;padding:3px 10px;
+  font-family:var(--mono);font-size:12px;font-weight:700;box-shadow:0 3px 10px rgba(37,99,235,.34);
+  animation:popUp .34s cubic-bezier(.34,1.5,.6,1);z-index:2}
+.pa{position:absolute;font-family:var(--mono);font-size:11px;font-weight:700;color:rgba(20,28,43,.4);display:flex;align-items:center;gap:3px}
+.pa i{font-style:normal;font-size:15px;line-height:1}
+.pa.solid{color:var(--ink);font-size:12px}
+.pa.solid i{font-size:22px}
+.pa.zero{opacity:.26}
+.pa.u{top:8px;left:50%;transform:translateX(-50%);flex-direction:column;gap:0}
+.pa.d{bottom:8px;left:50%;transform:translateX(-50%);flex-direction:column-reverse;gap:0}
+.pa.l{left:9px;top:50%;transform:translateY(-50%)}
+.pa.r{right:9px;top:50%;transform:translateY(-50%);flex-direction:row-reverse}
+.polchip{position:absolute;left:50%;top:112px;transform:translateX(-50%);display:inline-flex;align-items:center;gap:5px;
+  font-family:var(--mono);font-size:12.5px;font-weight:700;padding:3px 11px;border-radius:999px;
+  border:1.5px dashed var(--ref);color:var(--ref);background:rgba(255,255,255,.9);white-space:nowrap}
+.polchip.applied{border-style:solid;background:var(--ref);color:#fff;animation:popUp .34s cubic-bezier(.34,1.5,.6,1)}
+.polchip i{font-style:normal;font-size:15px;line-height:1}
+.ov{position:absolute;inset:0;pointer-events:none;overflow:visible;z-index:4}
+.ov .mv{animation-duration:.34s;animation-timing-function:cubic-bezier(.3,.85,.4,1);animation-fill-mode:both}
+.rbadge{position:absolute;transform:translate(-50%,-50%);font-family:var(--mono);font-size:13px;font-weight:700;
+  padding:4px 11px;border-radius:999px;background:var(--rew);color:#fff;box-shadow:0 4px 12px rgba(180,83,9,.3);
+  white-space:nowrap;z-index:5;animation:popIn .34s cubic-bezier(.34,1.5,.6,1)}
+.rbadge.zero{background:#fff;color:var(--ink3);border:1px solid var(--line);box-shadow:0 3px 8px rgba(20,28,43,.08)}
+.axl{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--ink3)}
+
+/* ---- panel --------------------------------------------------------------- */
+.panel{padding:18px 20px 17px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.selrow{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.selrow .s{font-family:var(--mono);font-size:20px;font-weight:700}
+.selrow .t{font-size:12.5px;font-weight:800;color:var(--ink3)}
+.rows{display:flex;flex-direction:column;gap:8px}
+.row{border:1px solid var(--line);border-radius:15px;padding:10px 13px 11px;background:#fff;
+  transition:border-color .2s ease, background .2s ease, transform .2s ease}
+.row.hit{cursor:pointer}
+.row.hit:hover{border-color:#CBD5E1}
+.row.on{border-color:var(--sel);background:var(--sel-soft);transform:translateX(3px)}
+.row.win{border-color:var(--ref);background:var(--ref-soft)}
+.row.dim{opacity:.42}
+.r1{display:flex;align-items:center;gap:9px}
+.aico{width:30px;height:30px;border-radius:10px;background:var(--soft);color:var(--ink2);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:800;flex:0 0 auto}
+.row.on .aico{background:var(--sel);color:#fff}
+.row.win .aico{background:var(--ref);color:#fff}
+.nxt{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--ink2);white-space:nowrap}
+.rb{font-family:var(--mono);font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--soft);color:var(--ink3)}
+.rb.pos{background:var(--rew);color:#fff}
+.bnum{margin-left:auto;font-family:var(--mono);font-size:16px;font-weight:700;letter-spacing:-.02em}
+.track{margin-top:9px;height:9px;border-radius:99px;background:var(--soft);position:relative;overflow:hidden}
+.track i{position:absolute;left:0;top:0;bottom:0;border-radius:99px;transition:width .45s cubic-bezier(.3,.9,.3,1)}
+.track i.b{background:#FFD59B}
+.track i.w{background:var(--sel)}
+.row.win .track i.b{background:#C9B4F7}
+.res{border:1px solid #D9E4F7;background:linear-gradient(180deg,#F6FAFF,#fff);border-radius:18px;padding:13px 15px 14px}
+.res.max{border-color:#E2D6FB;background:linear-gradient(180deg,#FAF7FF,#fff)}
+.stack{height:15px;border-radius:99px;background:var(--soft);display:flex;overflow:hidden}
+.stack i{display:block;height:100%;transition:width .5s cubic-bezier(.3,.9,.3,1)}
+.resrow{display:flex;align-items:baseline;gap:12px;margin-top:12px;flex-wrap:wrap}
+.big{font-family:var(--mono);font-size:38px;font-weight:700;letter-spacing:-.045em;line-height:1}
+.from{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--ink3)}
+.delta{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--goal);background:var(--goal-soft);border-radius:999px;padding:3px 10px}
+.tiny{font-size:12.5px;font-weight:700;color:var(--ink2);line-height:1.5}
+.strip{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.nv{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:12px;padding:5px 11px;background:#fff}
+.nv .s{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--ink3)}
+.nv .v{font-family:var(--mono);font-size:13.5px;font-weight:700;color:#C3CBD6}
+.nv.done{border-color:#C6DAFF;background:var(--sel-soft)}
+.nv.done .v{color:var(--sel)}
+.nv.done .s{color:#6B8FD4}
+.nv.now{animation:popUp .34s cubic-bezier(.34,1.5,.6,1)}
+.ramp{height:9px;width:118px;border-radius:99px;border:1px solid rgba(20,28,43,.07);
+  background:linear-gradient(90deg,#FFFDF6,#FFF2CC,#FFE2A2,#FFCA8B,#FFAE86,#FF8E86)}
+.lg{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;color:var(--ink3)}
+.sw{width:13px;height:13px;border-radius:5px;border:2px solid}
+
+/* mini grid */
+.mcell{position:absolute;width:112px;height:112px;border-radius:14px;border:1px solid rgba(20,28,43,.08);cursor:pointer;transition:background .5s ease, box-shadow .2s ease}
+.mcell .mv{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:19px;font-weight:700}
+.mcell .mc{position:absolute;left:8px;bottom:6px;font-family:var(--mono);font-size:9.5px;font-weight:700;color:rgba(20,28,43,.32)}
+.mcell .mg{position:absolute;left:50%;top:10px;transform:translateX(-50%);font-family:var(--mono);font-size:11px;font-weight:700;color:var(--ref);white-space:nowrap}
+.mcell.sel{box-shadow:0 0 0 3px var(--sel);z-index:2}
+.mcell.goal{background:var(--goal-soft) !important;border-color:#BEE4DA;cursor:default}
+.mcell.goal .mv{color:var(--goal);font-weight:800}
+.paneh{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:11px}
+.paneh .t{font-size:14px;font-weight:800}
+.paneh .s{font-size:11.5px;font-weight:700;color:var(--ink3)}
+
+/* flow + runs */
+.flow{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.fl{font-size:12.5px;font-weight:800;color:var(--ink3);background:#fff;border:1px solid var(--line);padding:6px 13px;border-radius:11px}
+.fl.done{color:var(--ink2);background:var(--soft)}
+.fl.now{color:#fff;background:var(--ref);border-color:var(--ref)}
+.fl.sep{border:0;background:transparent;padding:0 1px;color:#C6CFDA}
+.runrow{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:15px;padding:12px 14px;cursor:pointer;background:#fff;transition:border-color .2s ease,background .2s ease}
+.runrow:hover{border-color:#CBD5E1}
+.runrow.on{border-color:var(--sel);background:var(--sel-soft)}
+.runrow .nm{font-family:var(--mono);font-size:13.5px;font-weight:700}
+.runrow .sb{font-size:11.5px;font-weight:700;color:var(--ink3);margin-top:2px}
+.meter{height:11px;border-radius:99px;background:var(--soft);overflow:hidden}
+.meter i{display:block;height:100%;border-radius:99px;transition:width .5s cubic-bezier(.3,.9,.3,1)}
+.ghost{border:2px dashed #D9E0E9;border-radius:20px;background:#FBFCFE;padding:24px;display:flex;flex-direction:column;align-items:center;gap:9px;text-align:center}
+.ghost .t{font-size:15px;font-weight:800;color:var(--ink2)}
+.ghost .s{font-size:12.5px;font-weight:700;color:var(--ink3);max-width:430px;line-height:1.55}
+.hint{border:1px solid #EFD9A8;background:#FFFBF0;border-radius:15px;padding:12px 14px;font-size:13px;font-weight:700;color:#7A5C12;line-height:1.5}
+
+/* table */
+.htable{border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.hrow{display:grid;font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--ink2);
+  grid-template-columns:48px 1fr 46px 58px 1fr}
+.hrow span{padding:8px 11px;text-align:right;border-top:1px solid var(--soft)}
+.hrow span:first-child{text-align:left;color:var(--ink3)}
+.hrow.head{background:#F5F8FC;color:var(--ink3);font-size:11px}
+.hrow.head span{border-top:0}
+.hrow.fresh{animation:rowIn .35s ease}
+
+/* car */
+.car{position:absolute;z-index:6;pointer-events:none;filter:drop-shadow(0 7px 12px rgba(20,28,43,.22));
+  transition:left .55s cubic-bezier(.35,.05,.2,1), top .55s cubic-bezier(.35,.05,.2,1), transform .34s ease}
+
+/* ---- motion -------------------------------------------------------------- */
+@keyframes drawA{from{stroke-dashoffset:var(--len)}to{stroke-dashoffset:0}}
+@keyframes drawB{from{stroke-dashoffset:var(--len)}to{stroke-dashoffset:0}}
+@keyframes popIn{from{opacity:0;transform:translate(-50%,-50%) scale(.55)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@keyframes popUp{from{opacity:0;transform:translateY(-5px) scale(.82)}to{opacity:1;transform:none}}
+@keyframes cellPop{0%{transform:scale(1)}42%{transform:scale(1.05)}100%{transform:scale(1)}}
+@keyframes ringPulse{0%,100%{box-shadow:0 0 0 3px var(--ref)}50%{box-shadow:0 0 0 7px rgba(124,58,237,.24)}}
+@keyframes rowIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@keyframes liveDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.65)}}
+@keyframes popUpA{from{opacity:0;transform:translateY(-5px) scale(.82)}to{opacity:1;transform:none}}
+@keyframes popUpB{from{opacity:0;transform:translateY(-5px) scale(.82)}to{opacity:1;transform:none}}
+
+  </style>
+</helmet>
+<div class="page" style="width: 1440px; min-height: 940px;">
+
+  <div class="top">
+    <div class="brand">Bellman DP Lab <span>내 구현 살펴보기</span></div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span class="chip mock">화면 설계용 목업</span>
+      <div class="tabs"><div>함께 배우기</div><div class="on">내 구현</div></div>
+    </div>
+  </div>
+
+  <div class="flow">
+    <sc-for list="{{phases}}" as="p" hint-placeholder-count="7">
+      <div class="fl {{p.cls}}">{{p.t}}</div>
+    </sc-for>
+  </div>
+
+  <div>
+    <h1 class="ask">내 계산이 같은 값을 만들고 있나?</h1>
+    <div class="sub">{{sub}}</div>
+  </div>
+
+  <div class="cols">
+
+    <section class="card" style="flex: 0 0 800px; padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+      <div class="chead">
+        <div class="ctitle">실행 선택</div>
+        <span class="cnote">로컬 run 폴더를 읽습니다</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <sc-for list="{{runs}}" as="r" hint-placeholder-count="2">
+          <div class="runrow {{r.cls}}" onClick="{{r.pick}}">
+            <div style="flex: 1 1 auto; min-width: 0;">
+              <div class="nm">{{r.path}}</div>
+              <div class="sb">{{r.sub}}</div>
+            </div>
+            <span class="chip {{r.badgeCls}}">{{r.badge}}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div>
+        <div class="chead" style="margin-bottom: 8px;">
+          <div class="ctitle">설명 모드에 필요한 기록</div>
+          <span class="cnote"><span class="m">{{cover.have}}</span> / {{cover.total}}</span>
+        </div>
+        <div class="meter"><i style="width: {{cover.pct}}%; background: {{cover.color}};"></i></div>
+        <div class="strip" style="margin-top: 9px;">
+          <sc-for list="{{cover.items}}" as="c" hint-placeholder-count="4">
+            <span class="nv {{c.cls}}"><span class="s">{{c.t}}</span></span>
+          </sc-for>
+        </div>
+      </div>
+
+      <div class="ghost">
+        <div class="t">{{map.title}}</div>
+        <div class="s">{{map.body}}</div>
+      </div>
+    </section>
+
+    <aside class="card panel" style="flex: 1 1 540px;">
+      <div class="selrow">
+        <div class="s">{{sel.label}}</div>
+        <div class="t">{{sel.value}}</div>
+      </div>
+
+      <div class="hint {{empty.cls}}">{{empty.text}}</div>
+      <div class="tiny {{empty.cls}}">{{empty.more}}</div>
+
+      <div class="rows {{detail.cls}}">
+        <sc-for list="{{rows}}" as="r" hint-placeholder-count="4">
+          <div class="row {{r.cls}}">
+            <div class="r1">
+              <div class="aico">{{r.g}}</div>
+              <div class="nxt">{{r.next}}</div>
+              <span class="rb {{r.rcls}}">{{r.r}}</span>
+              <span class="bnum">{{r.b}}</span>
+            </div>
+            <div class="track">
+              <i class="b" style="width: {{r.wB}}%;"></i>
+              <i class="w" style="width: {{r.wW}}%;"></i>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div class="res {{detail.cls}}">
+        <div class="resrow" style="margin-top: 0;">
+          <div class="big" style="animation: .34s cubic-bezier(.34,1.5,.6,1) both {{detail.anim}};">{{detail.value}}</div>
+          <span class="from">기록된 value_after</span>
+          <span class="delta">재계산 일치</span>
+        </div>
+      </div>
+
+      <div class="tiny {{detail.cls}}">source_snapshot_id <span class="m">eval-p0-k1</span> 로 지도 · 표 · 지표가 같은 버전에서 움직입니다.</div>
+    </aside>
+  </div>
+
+  <div class="foot">
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <button class="btn primary" onClick="{{goPlay}}">{{playLabel}}</button>
+      <button class="btn" onClick="{{goSwap}}">다른 실행 보기</button>
+    </div>
+    <div class="status">
+      <span class="live {{liveCls}}"></span>
+      <span>{{statusText}}</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":1440,"height":940}}'>
+class Component extends DCLogic {
+  // Two run states the screen must handle: what the current publish path
+  // produces (values + one representative arrow) and what the data contract in
+  // spec 12.2 unlocks. The detailed case replays the (2,0) backup from 8.2.
+  DATA() {
+    return {
+      summary: {
+        path: 'runs/policy_iter',
+        sub: 'scalar_field · vector_field · metrics 만 기록',
+        badge: '요약 보기', badgeCls: '',
+        have: 1, items: ['값 스냅숏'],
+        color: '#E8A33D',
+        map: {
+          title: '값 지도만 재생할 수 있습니다',
+          body: '셀을 눌러도 계산을 펼칠 수 없습니다.'
+        },
+        sel: { label: '선택한 칸', value: '계산 기록 없음' },
+        empty: {
+          cls: '',
+          text: '값과 정책만 기록되어 있어 계산 과정은 확인할 수 없습니다.',
+          more: 'π 가 대표 행동 하나로 저장돼, 균등 정책도 한 방향처럼 보입니다.'
+        },
+        detailCls: 'hid',
+        status: '설명 모드 비활성'
+      },
+      trace: {
+        path: 'runs/bellman_room   (예시)',
+        sub: 'ExperimentConfig · Snapshot · BackupEvent 까지 기록',
+        badge: '설명 가능', badgeCls: 'q',
+        have: 7, items: ['환경 설정', '값 스냅숏', 'π 분포', '전이 · 보상'],
+        color: '#2563EB',
+        map: {
+          title: '이벤트 단위로 되감을 수 있습니다',
+          body: '학습 화면과 같은 계산표가 실행 기록으로 열립니다.'
+        },
+        sel: { label: 's = (2,0)', value: 'value_before 0.25' },
+        empty: { cls: 'hid', text: '', more: '' },
+        detailCls: '',
+        status: '설명 모드 활성'
+      }
+    };
+  }
+
+  // The recorded backup event, exactly as in spec 8.2 / 12.3.
+  EV() {
+    return [
+      { g: '→', next: '제자리', r: 0, b: '0.2250', B: 0.225, w: 0.05625 },
+      { g: '←', next: '(1,0)', r: 0, b: '0.0000', B: 0, w: 0 },
+      { g: '↑', next: 'G 종료', r: 1, b: '1.0000', B: 1, w: 0.25 },
+      { g: '↓', next: '제자리', r: 0, b: '0.2250', B: 0.225, w: 0.05625 }
+    ];
+  }
+
+  st() { return Object.assign({ phase: 0, play: true, which: null }, this.state || {}); }
+
+  stop() { if (this.t) { clearInterval(this.t); this.t = null; } }
+  componentDidMount() { if (this.st().play) this.start(); }
+  componentWillUnmount() { this.stop(); }
+  start() { this.stop(); this.t = setInterval(() => { const s = this.st(); this.setState({ phase: (s.phase + 1) % 9 }); }, 900); }
+  hand(patch) { this.stop(); this.setState(Object.assign({ play: false }, patch)); }
+
+  renderVals() {
+    const s = this.st(), D = this.DATA(), EV = this.EV(), self = this;
+    const auto = s.phase <= 4 ? 'trace' : 'summary';
+    const which = s.which || auto;
+    const cur = D[which];
+    const shown = which === 'trace' ? (s.which ? 4 : Math.min(s.phase, 4)) : 0;
+
+    return {
+      runs: ['summary', 'trace'].map((key) => ({
+        path: D[key].path, sub: D[key].sub,
+        badge: D[key].badge, badgeCls: D[key].badgeCls,
+        cls: key === which ? 'on' : '',
+        pick: () => self.hand({ which: key })
+      })),
+      phases: [
+        { t: 'policy_evaluation', cls: 'now' }, { t: '→', cls: 'sep' },
+        { t: 'policy_improvement', cls: '' }, { t: '→', cls: 'sep' },
+        { t: 'value_iteration', cls: '' }, { t: '→', cls: 'sep' },
+        { t: 'rollout', cls: '' }
+      ],
+      sub: which === 'trace'
+        ? '네 행동의 전이 · 보상까지 기록되면 같은 설명을 열 수 있습니다.'
+        : '지금 기록으로는 값 지도까지만 보여줄 수 있습니다.',
+      cover: {
+        have: cur.have, total: 8,
+        pct: Math.round(cur.have / 8 * 100),
+        color: cur.color,
+        items: cur.items.map((t) => ({ t: t, cls: 'done' }))
+      },
+      map: cur.map, sel: cur.sel, empty: cur.empty,
+      rows: EV.map((t, i) => ({
+        g: t.g, next: t.next,
+        r: t.r > 0 ? '+1' : '0', rcls: t.r > 0 ? 'pos' : '',
+        b: t.b, wB: Math.round(t.B * 100),
+        wW: i < shown ? Math.round(t.w * 100) : 0,
+        cls: i < shown ? '' : 'dim'
+      })),
+      detail: {
+        cls: cur.detailCls,
+        value: shown >= 4 ? '0.3625' : EV.slice(0, shown).reduce((a, t) => a + t.w, 0).toFixed(5).replace(/0+$/, '').replace(/\.$/, ''),
+        anim: s.phase % 2 ? 'popUpA' : 'popUpB'
+      },
+      statusText: cur.status,
+      playLabel: s.play ? '일시정지' : '자동 재생',
+      liveCls: s.play && !s.which ? '' : 'hid',
+      goSwap: () => this.hand({ which: which === 'trace' ? 'summary' : 'trace' }),
+      goPlay: () => {
+        if (s.play) { this.stop(); this.setState({ play: false }); }
+        else { this.setState({ play: true, which: null }); this.start(); }
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<div class="page" style="width: 1440px; min-height: 940px;">
+
+  <div class="top">
+    <div class="brand">Bellman DP Lab <span>정책 개선 · 같은 표, 다른 집계</span></div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span class="chip mock">기획서 7.3절 fixture</span>
+      <div class="tabs"><div class="on">함께 배우기</div><div>내 구현</div></div>
+    </div>
+  </div>
+
+  <div class="flow">
+    <sc-for list="{{flow}}" as="f" hint-placeholder-count="7">
+      <div class="fl {{f.cls}}">{{f.t}}</div>
+    </sc-for>
+  </div>
+
+  <div>
+    <h1 class="ask">{{ask}}</h1>
+    <div class="sub">{{sub}}</div>
+  </div>
+
+  <div class="cols">
+
+    <section class="card" style="flex: 0 0 800px; padding: 18px; display: flex; flex-direction: column; gap: 12px;">
+      <div class="chead">
+        <div class="ctitle">지도 · V₂ 는 π₀ 의 평가값</div>
+        <span class="cnote">{{mapNote}}</span>
+      </div>
+
+      <div style="display: flex; gap: 8px; justify-content: center;">
+        <div style="position: relative; width: 22px; height: 422px;">
+          <span class="axl" style="position: absolute; left: 0; top: 108px;">y1</span>
+          <span class="axl" style="position: absolute; left: 0; top: 310px;">y0</span>
+        </div>
+        <div>
+          <div class="pane">
+            <div class="grid" style="width: 594px; height: 392px;">
+              <sc-for list="{{cells}}" as="c" hint-placeholder-count="6">
+                <div class="cell hit {{c.cls}}" style="left: {{c.left}}px; top: {{c.top}}px; width: 190px; height: 190px; background: {{c.bg}};" onClick="{{c.pick}}">
+                  <div class="g {{c.goalCls}}">
+                    <div class="n">G</div>
+                    <div class="s">종료</div>
+                    <div class="v">V = 0</div>
+                  </div>
+                  <div class="{{c.stateCls}}">
+                    <div class="val">{{c.value}}</div>
+                    <div class="co">{{c.co}}</div>
+                    <div class="pa u {{c.au}}"><i>↑</i><span>{{c.pu}}</span></div>
+                    <div class="pa d {{c.ad}}"><i>↓</i><span>{{c.pd}}</span></div>
+                    <div class="pa l {{c.al}}"><i>←</i><span>{{c.pl}}</span></div>
+                    <div class="pa r {{c.ar}}"><i>→</i><span>{{c.pr}}</span></div>
+                    <div class="polchip {{c.chipCls}}"><i>{{c.chipGlyph}}</i>{{c.chipText}}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-around; width: 624px; padding: 7px 32px 0;">
+            <span class="axl">x0</span><span class="axl">x1</span><span class="axl">x2</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="strip" style="justify-content: space-between;">
+        <div class="strip">
+          <span class="ctitle">후보</span>
+          <sc-for list="{{diff}}" as="d" hint-placeholder-count="5">
+            <span class="nv {{d.cls}}"><span class="s">{{d.s}}</span><span class="v">{{d.v}}</span></span>
+          </sc-for>
+        </div>
+        <div class="strip">
+          <span class="lg"><span class="sw" style="border-color: #7C3AED; border-style: dashed;"></span>후보</span>
+          <span class="lg"><span class="sw" style="border-color: #7C3AED; background: #7C3AED;"></span>적용</span>
+        </div>
+      </div>
+    </section>
+
+    <aside class="card panel" style="flex: 1 1 540px;">
+      <div class="selrow">
+        <div class="s">s = {{sel.label}}</div>
+        <div class="t">V₂ = {{sel.v}}</div>
+      </div>
+
+      <div class="rows">
+        <sc-for list="{{rows}}" as="r" hint-placeholder-count="4">
+          <div class="row hit {{r.cls}}" onClick="{{r.pick}}">
+            <div class="r1">
+              <div class="aico">{{r.g}}</div>
+              <div class="nxt">{{r.next}}</div>
+              <span class="rb {{r.rcls}}">{{r.r}}</span>
+              <span class="bnum">{{r.b}}</span>
+            </div>
+            <div class="track">
+              <i class="b" style="width: {{r.wB}}%;"></i>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div class="res max">
+        <div class="resrow" style="margin-top: 0;">
+          <div class="big" style="color: #7C3AED; animation: .34s cubic-bezier(.34,1.5,.6,1) both {{res.anim}};">{{res.pick}}</div>
+          <span class="from">후보 정책</span>
+          <span class="delta" style="color: #7C3AED; background: #F3EDFF;">{{res.state}}</span>
+        </div>
+      </div>
+
+      <div class="tiny">{{res.say}}</div>
+    </aside>
+  </div>
+
+  <div class="foot">
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <button class="btn primary" onClick="{{goPlay}}">{{playLabel}}</button>
+      <button class="btn" onClick="{{goApply}}">{{applyLabel}}</button>
+      <button class="btn" onClick="{{goReset}}">처음부터</button>
+    </div>
+    <div class="status">
+      <span class="live {{liveCls}}"></span>
+      <span>정책 <span class="m">{{policyName}}</span></span><span class="pip"></span>
+      <span>바뀌는 칸 <span class="m">{{changedCount}}/5</span></span>
+    </div>
+  </div>
+</div>

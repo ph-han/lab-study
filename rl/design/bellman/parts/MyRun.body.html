@@ -1,0 +1,109 @@
+<div class="page" style="width: 1440px; min-height: 940px;">
+
+  <div class="top">
+    <div class="brand">Bellman DP Lab <span>내 구현 살펴보기</span></div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span class="chip mock">화면 설계용 목업</span>
+      <div class="tabs"><div>함께 배우기</div><div class="on">내 구현</div></div>
+    </div>
+  </div>
+
+  <div class="flow">
+    <sc-for list="{{phases}}" as="p" hint-placeholder-count="7">
+      <div class="fl {{p.cls}}">{{p.t}}</div>
+    </sc-for>
+  </div>
+
+  <div>
+    <h1 class="ask">내 계산이 같은 값을 만들고 있나?</h1>
+    <div class="sub">{{sub}}</div>
+  </div>
+
+  <div class="cols">
+
+    <section class="card" style="flex: 0 0 800px; padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+      <div class="chead">
+        <div class="ctitle">실행 선택</div>
+        <span class="cnote">로컬 run 폴더를 읽습니다</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <sc-for list="{{runs}}" as="r" hint-placeholder-count="2">
+          <div class="runrow {{r.cls}}" onClick="{{r.pick}}">
+            <div style="flex: 1 1 auto; min-width: 0;">
+              <div class="nm">{{r.path}}</div>
+              <div class="sb">{{r.sub}}</div>
+            </div>
+            <span class="chip {{r.badgeCls}}">{{r.badge}}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div>
+        <div class="chead" style="margin-bottom: 8px;">
+          <div class="ctitle">설명 모드에 필요한 기록</div>
+          <span class="cnote"><span class="m">{{cover.have}}</span> / {{cover.total}}</span>
+        </div>
+        <div class="meter"><i style="width: {{cover.pct}}%; background: {{cover.color}};"></i></div>
+        <div class="strip" style="margin-top: 9px;">
+          <sc-for list="{{cover.items}}" as="c" hint-placeholder-count="4">
+            <span class="nv {{c.cls}}"><span class="s">{{c.t}}</span></span>
+          </sc-for>
+        </div>
+      </div>
+
+      <div class="ghost">
+        <div class="t">{{map.title}}</div>
+        <div class="s">{{map.body}}</div>
+      </div>
+    </section>
+
+    <aside class="card panel" style="flex: 1 1 540px;">
+      <div class="selrow">
+        <div class="s">{{sel.label}}</div>
+        <div class="t">{{sel.value}}</div>
+      </div>
+
+      <div class="hint {{empty.cls}}">{{empty.text}}</div>
+      <div class="tiny {{empty.cls}}">{{empty.more}}</div>
+
+      <div class="rows {{detail.cls}}">
+        <sc-for list="{{rows}}" as="r" hint-placeholder-count="4">
+          <div class="row {{r.cls}}">
+            <div class="r1">
+              <div class="aico">{{r.g}}</div>
+              <div class="nxt">{{r.next}}</div>
+              <span class="rb {{r.rcls}}">{{r.r}}</span>
+              <span class="bnum">{{r.b}}</span>
+            </div>
+            <div class="track">
+              <i class="b" style="width: {{r.wB}}%;"></i>
+              <i class="w" style="width: {{r.wW}}%;"></i>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div class="res {{detail.cls}}">
+        <div class="resrow" style="margin-top: 0;">
+          <div class="big" style="animation: .34s cubic-bezier(.34,1.5,.6,1) both {{detail.anim}};">{{detail.value}}</div>
+          <span class="from">기록된 value_after</span>
+          <span class="delta">재계산 일치</span>
+        </div>
+      </div>
+
+      <div class="tiny {{detail.cls}}">source_snapshot_id <span class="m">eval-p0-k1</span> 로 지도 · 표 · 지표가 같은 버전에서 움직입니다.</div>
+    </aside>
+  </div>
+
+  <div class="foot">
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <button class="btn primary" onClick="{{goPlay}}">{{playLabel}}</button>
+      <button class="btn" onClick="{{goSwap}}">다른 실행 보기</button>
+    </div>
+    <div class="status">
+      <span class="live {{liveCls}}"></span>
+      <span>{{statusText}}</span>
+    </div>
+  </div>
+</div>

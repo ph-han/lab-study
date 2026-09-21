@@ -1,0 +1,146 @@
+<div class="page" style="width: 1440px; min-height: 940px;">
+
+  <div class="top">
+    <div class="brand">Bellman DP Lab <span>예제 B · 3×2 작은 방</span></div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span class="chip mock">기획서 8.2절 fixture</span>
+      <div class="tabs"><div class="on">함께 배우기</div><div>내 구현</div></div>
+    </div>
+  </div>
+
+  <div class="dots">
+    <sc-for list="{{dots}}" as="d" hint-placeholder-count="7">
+      <span class="dt {{d.cls}}"></span>
+    </sc-for>
+    <span class="dtl">{{dotLabel}}</span>
+  </div>
+
+  <div>
+    <h1 class="ask">{{ask}}</h1>
+    <div class="sub">{{sub}}</div>
+  </div>
+
+  <div class="cols">
+
+    <section class="card" style="flex: 0 0 800px; padding: 18px; display: flex; flex-direction: column; gap: 12px;">
+      <div class="chead">
+        <div class="ctitle">지도 · V{{read}} 유지</div>
+        <div class="seg">
+          <button class="{{seg.v}}" onClick="{{layerValue}}">값</button>
+          <button class="{{seg.p}}" onClick="{{layerPolicy}}">정책</button>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; justify-content: center;">
+        <div style="position: relative; width: 22px; height: 422px;">
+          <span class="axl" style="position: absolute; left: 0; top: 108px;">y1</span>
+          <span class="axl" style="position: absolute; left: 0; top: 310px;">y0</span>
+        </div>
+        <div>
+          <div class="pane">
+            <div class="grid" style="width: 594px; height: 392px;">
+              <sc-for list="{{cells}}" as="c" hint-placeholder-count="6">
+                <div class="cell hit {{c.cls}}" style="left: {{c.left}}px; top: {{c.top}}px; width: 190px; height: 190px; background: {{c.bg}};" onClick="{{c.pick}}">
+                  <div class="g {{c.goalCls}}">
+                    <div class="n">G</div>
+                    <div class="s">종료</div>
+                    <div class="v">V = 0</div>
+                  </div>
+                  <div class="{{c.stateCls}}">
+                    <div class="val">{{c.value}}</div>
+                    <div class="co">{{c.co}}</div>
+                    <div class="tag">{{c.tag}}</div>
+                    <div class="pa u {{c.au}}"><i>↑</i><span>{{c.pu}}</span></div>
+                    <div class="pa d {{c.ad}}"><i>↓</i><span>{{c.pd}}</span></div>
+                    <div class="pa l {{c.al}}"><i>←</i><span>{{c.pl}}</span></div>
+                    <div class="pa r {{c.ar}}"><i>→</i><span>{{c.pr}}</span></div>
+                    <div class="newv {{c.newCls}}">{{c.newValue}}</div>
+                  </div>
+                </div>
+              </sc-for>
+
+              <svg class="ov" width="594" height="392" viewBox="0 0 594 392">
+                <path class="mv" d="{{arrow.d}}" fill="none" stroke="#2563EB" stroke-width="5" stroke-linecap="round"
+                      stroke-dasharray="{{arrow.len}}" style="--len: {{arrow.len}}px; animation-name: {{arrow.anim}};"></path>
+                <polygon points="{{arrow.head}}" fill="#2563EB"></polygon>
+              </svg>
+
+              <div class="rbadge {{arrow.rcls}}" style="left: {{arrow.rx}}px; top: {{arrow.ry}}px;">{{arrow.r}}</div>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-around; width: 624px; padding: 7px 32px 0;">
+            <span class="axl">x0</span><span class="axl">x1</span><span class="axl">x2</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="strip" style="justify-content: space-between;">
+        <div class="strip">
+          <span class="ctitle">새 값</span>
+          <sc-for list="{{strip}}" as="n" hint-placeholder-count="5">
+            <span class="nv {{n.cls}}"><span class="s">{{n.s}}</span><span class="v">{{n.v}}</span></span>
+          </sc-for>
+        </div>
+        <div class="strip">
+          <span class="lg"><span class="ramp"></span>0–1</span>
+          <span class="lg"><span class="sw" style="border-color: #2563EB;"></span>선택</span>
+          <span class="lg"><span class="sw" style="border-color: #7C3AED;"></span>참조</span>
+        </div>
+      </div>
+    </section>
+
+    <aside class="card panel" style="flex: 1 1 540px;">
+      <div class="selrow">
+        <div class="s">s = {{sel.label}}</div>
+        <div class="t">π 균등 25%</div>
+      </div>
+
+      <div class="rows">
+        <sc-for list="{{rows}}" as="r" hint-placeholder-count="4">
+          <div class="row hit {{r.cls}}" onClick="{{r.pick}}">
+            <div class="r1">
+              <div class="aico">{{r.g}}</div>
+              <div class="nxt">{{r.next}}</div>
+              <span class="rb {{r.rcls}}">{{r.r}}</span>
+              <span class="bnum">{{r.b}}</span>
+            </div>
+            <div class="track">
+              <i class="b" style="width: {{r.wB}}%;"></i>
+              <i class="w" style="width: {{r.wW}}%;"></i>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div class="res">
+        <div class="stack">
+          <sc-for list="{{stack}}" as="s" hint-placeholder-count="4">
+            <i style="width: {{s.w}}%; background: {{s.c}};"></i>
+          </sc-for>
+        </div>
+        <div class="resrow">
+          <div class="big" style="animation: .34s cubic-bezier(.34,1.5,.6,1) both {{res.anim}};">{{res.value}}</div>
+          <span class="from">{{res.from}}</span>
+          <span class="delta {{res.deltaCls}}">{{res.delta}}</span>
+        </div>
+      </div>
+
+      <div class="tiny">{{res.say}}</div>
+    </aside>
+  </div>
+
+  <div class="foot">
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <button class="btn {{dis.prev}}" onClick="{{goPrev}}">이전</button>
+      <button class="btn primary" onClick="{{goPlay}}">{{playLabel}}</button>
+      <button class="btn {{dis.next}}" onClick="{{goNext}}">다음 계산</button>
+      <button class="btn {{dis.next}}" onClick="{{goSweep}}">한 바퀴</button>
+      <button class="btn" onClick="{{goReset}}">처음부터</button>
+    </div>
+    <div class="status">
+      <span class="live {{liveCls}}"></span>
+      <span>평가 <span class="m">{{write}}</span>회차</span><span class="pip"></span>
+      <span class="m">{{cursor}}/5</span>
+    </div>
+  </div>
+</div>

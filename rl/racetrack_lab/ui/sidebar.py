@@ -16,6 +16,10 @@ _SAMPLING = {"Auto": 0, "Every cell": 1, "Every 2nd cell": 2, "Every 3rd cell": 
 _POLL = {"0.25 s": 0.25, "0.5 s": 0.5, "1 s": 1.0, "2 s": 2.0}
 _OFF = "— off —"
 
+# What the radio says -> which engine app.py runs. Your two packages read the
+# same maps, so switching is one click and no other control changes.
+_ENGINES = {"정책 반복": "policy", "가치 반복": "value", "데모": "demo"}
+
 
 @dataclass
 class LiveConfig:
@@ -152,4 +156,79 @@ def render_display(session: LabSession, connected: bool) -> CanvasOptions:
         global_scale=(scale_choice == "Whole field"),
         sampling=_SAMPLING[sampling_label],
         max_frames=int(max_frames),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Map picker: the only choice that matters when the app computes it itself.
+# ---------------------------------------------------------------------------
+@dataclass
+class MapConfig:
+    text: str
+    name: str
+    gamma: float
+    sweeps: int
+    reward: dict
+    engine: str = "policy"
+    run: Path | None = None
+
+
+def render_map() -> MapConfig:
+    """Pick a room, or write one. Everything else has a sane default."""
+    from .. import rooms
+    from ..demo_dp import DEFAULT_REWARD
+    from ..schema import FINISH, START, TRACK, WALL
+
+    with st.sidebar:
+        st.markdown('<div class="rvl-side-title">엔진</div>', unsafe_allow_html=True)
+        engine = st.radio(
+            "엔진", list(_ENGINES), horizontal=True, key="engine_mode",
+            label_visibility="collapsed",
+            help="정책 반복 = algorithms/bellman_dp_policy_iteration, "
+                 "가치 반복 = algorithms/bellman_dp_value_iteration 을 그대로 실행하고 계산을 기록합니다.",
+        )
+        st.markdown('<div class="rvl-side-title">맵</div>', unsafe_allow_html=True)
+        names = list(rooms.ROOMS) + ["직접 쓰기"]
+        start = names.index("3r4c_wall") if "3r4c_wall" in names else 0
+        choice = st.selectbox("방", names, index=start, key="map_choice", label_visibility="collapsed")
+        default = rooms.ROOMS.get(choice, rooms.ROOMS["3r4c_wall"])
+        text = st.text_area(
+            "맵",
+            value="\n".join(line.strip() for line in default.strip().splitlines()),
+            key=f"map_text_{choice}",
+            height=140,
+            help=". 빈 칸   # 벽   S 시작   G 목표   ·   맨 윗줄이 맵의 위쪽입니다",
+        )
+        st.caption(". 빈 칸 · # 벽 · S 시작 · G 목표")
+
+        with st.expander("규칙", expanded=False):
+            gamma = st.slider("γ 할인율", 0.0, 0.99, 0.9, 0.01, key="map_gamma")
+            sweeps = st.slider("평가 바퀴 수", 1, 40, 8, 1, key="map_sweeps")
+            c1, c2 = st.columns(2)
+            with c1:
+                r_wall = st.number_input("벽 충돌", value=float(DEFAULT_REWARD[WALL]), step=0.05, key="r_wall")
+                r_track = st.number_input("이동", value=float(DEFAULT_REWARD[TRACK]), step=0.05, key="r_track")
+            with c2:
+                r_start = st.number_input("시작 칸", value=float(DEFAULT_REWARD[START]), step=0.05, key="r_start")
+                r_goal = st.number_input("목표 진입", value=float(DEFAULT_REWARD[FINISH]), step=0.5, key="r_goal")
+
+        # Your own runs, when there are any. One control, no plumbing.
+        found = list_runs("runs")
+        run = None
+        if found:
+            st.markdown('<div class="rvl-side-title">내 실행</div>', unsafe_allow_html=True)
+            labels = ["끄기 (맵 계산)"] + [p.name for p in found]
+            pick = st.selectbox("실행", labels, key="own_run", label_visibility="collapsed",
+                                help="LiveRun 으로 발행한 폴더. 고르면 맵 대신 그 실행을 읽습니다.")
+            run = next((p for p in found if p.name == pick), None)
+        st.divider()
+
+    return MapConfig(
+        text=text,
+        name=choice if choice != "직접 쓰기" else "custom",
+        gamma=float(gamma),
+        sweeps=int(sweeps),
+        reward={WALL: r_wall, TRACK: r_track, START: r_start, FINISH: r_goal},
+        engine=_ENGINES.get(engine, "policy"),
+        run=run,
     )

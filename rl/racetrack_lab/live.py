@@ -189,6 +189,7 @@ class LiveRun:
         self._episode: list[dict[str, Any]] = []
         self._pending: tuple[dict[str, Any], bool] | None = None
         self._last_write = 0.0
+        self._trace: Any = None
 
         self.path.mkdir(parents=True, exist_ok=True)
         if reset:
@@ -221,6 +222,24 @@ class LiveRun:
     def new_episode(self) -> None:
         """Forget the states appended so far; the next ``state=`` starts a new trail."""
         self._episode = []
+
+    def trace(self, *, coords: str = "yx", gamma: float | None = None, actions: Any = None) -> Any:
+        """Open the calculation channel for this run (see :mod:`racetrack_lab.trace`).
+
+        Call it once, before the loop, so the viewer knows how you write states::
+
+            run.trace(coords="yx", gamma=agent.gamma)
+        """
+        from .trace import TraceWriter
+
+        self._trace = TraceWriter(self.path, coords=coords, gamma=gamma, actions=actions)
+        return self._trace
+
+    def backup(self, **kw: Any) -> Any:
+        """Record one Bellman backup. Opens the channel with defaults if needed."""
+        if self._trace is None:
+            self.trace()
+        return self._trace.backup(**kw)
 
     def publish(
         self,

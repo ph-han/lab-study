@@ -1,0 +1,140 @@
+<div class="page" style="width: 1440px; min-height: 940px;">
+
+  <div class="top">
+    <div class="brand">Bellman DP Lab <span>이동 확인 · 계산이 끝난 뒤</span></div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span class="chip mock">π₁ 재생 · 목업</span>
+      <div class="tabs"><div class="on">함께 배우기</div><div>내 구현</div></div>
+    </div>
+  </div>
+
+  <div class="dots">
+    <sc-for list="{{dots}}" as="d" hint-placeholder-count="7">
+      <span class="dt {{d.cls}}"></span>
+    </sc-for>
+    <span class="dtl">트랙에서 확인</span>
+  </div>
+
+  <div>
+    <h1 class="ask">이 정책대로 움직이면?</h1>
+    <div class="sub">{{sub}}</div>
+  </div>
+
+  <div class="cols">
+
+    <section class="card" style="flex: 0 0 800px; padding: 18px; display: flex; flex-direction: column; gap: 12px;">
+      <div class="chead">
+        <div class="ctitle">숫자는 V₂ · π₀ 를 평가한 값</div>
+        <div class="seg">
+          <button class="{{seg.full}}" onClick="{{toggleFull}}">남은 경로</button>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; justify-content: center;">
+        <div style="position: relative; width: 22px; height: 422px;">
+          <span class="axl" style="position: absolute; left: 0; top: 108px;">y1</span>
+          <span class="axl" style="position: absolute; left: 0; top: 310px;">y0</span>
+        </div>
+        <div>
+          <div class="pane">
+            <div class="grid" style="width: 594px; height: 392px;">
+              <sc-for list="{{cells}}" as="c" hint-placeholder-count="6">
+                <div class="cell {{c.cls}}" style="left: {{c.left}}px; top: {{c.top}}px; width: 190px; height: 190px; background: {{c.bg}};">
+                  <div class="g {{c.goalCls}}">
+                    <div class="n">G</div>
+                    <div class="s">종료</div>
+                    <div class="v">V = 0</div>
+                  </div>
+                  <div class="{{c.stateCls}}">
+                    <div class="val sm">{{c.value}}</div>
+                    <div class="co">{{c.co}}</div>
+                    <div class="tag">{{c.tag}}</div>
+                    <div class="pa {{c.dir}} solid"><i>{{c.glyph}}</i></div>
+                  </div>
+                </div>
+              </sc-for>
+
+              <svg class="ov" width="594" height="392" viewBox="0 0 594 392">
+                <path d="{{path.future}}" fill="none" stroke="#B6CBF3" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="10 12"></path>
+                <path d="{{path.done}}" fill="none" stroke="#3A86FF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" opacity=".85"></path>
+              </svg>
+
+              <div class="rbadge {{reward.cls}}" style="left: {{reward.x}}px; top: {{reward.y}}px;">{{reward.v}}</div>
+
+              <div class="car" style="left: {{car.x}}px; top: {{car.y}}px; transform: translate(-50%, -50%) rotate({{car.rot}}deg);">
+                <svg width="66" height="40" viewBox="0 0 56 34">
+                  <rect x="10" y="0" width="9" height="6" rx="2.5" fill="#20242E"></rect>
+                  <rect x="36" y="0" width="9" height="6" rx="2.5" fill="#20242E"></rect>
+                  <rect x="10" y="28" width="9" height="6" rx="2.5" fill="#20242E"></rect>
+                  <rect x="36" y="28" width="9" height="6" rx="2.5" fill="#20242E"></rect>
+                  <rect x="3" y="3.5" width="50" height="27" rx="10" fill="#FF5D5D" stroke="#C0392B" stroke-width="2"></rect>
+                  <rect x="19" y="8" width="17" height="18" rx="6" fill="#CFEFFF"></rect>
+                  <circle cx="48" cy="11" r="2.8" fill="#FFE66D"></circle>
+                  <circle cx="48" cy="23" r="2.8" fill="#FFE66D"></circle>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-around; width: 624px; padding: 7px 32px 0;">
+            <span class="axl">x0</span><span class="axl">x1</span><span class="axl">x2</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="strip" style="justify-content: space-between;">
+        <div class="strip">
+          <span class="chip">정책 <span class="m">π₁</span></span>
+          <span class="chip">시작 <span class="m">(0,0)</span></span>
+          <span class="chip q">greedy 실행</span>
+          <span class="chip {{termCls}}">{{termText}}</span>
+        </div>
+        <div class="strip">
+          <span class="lg"><span class="sw" style="border-color: #3A86FF; background: #3A86FF;"></span>지나온 길</span>
+          <span class="lg"><span class="sw" style="border-color: #C0392B; background: #FF5D5D;"></span>현재</span>
+        </div>
+      </div>
+    </section>
+
+    <aside class="card panel" style="flex: 1 1 540px;">
+      <div class="selrow">
+        <div class="s">{{curLabel}}</div>
+        <div class="t">이동 {{step}} / 3</div>
+      </div>
+
+      <div class="htable">
+        <div class="hrow head"><span>step</span><span>s</span><span>a</span><span>r</span><span>s′</span></div>
+        <sc-for list="{{steps}}" as="t" hint-placeholder-count="3">
+          <div class="hrow {{t.cls}}"><span>{{t.i}}</span><span>{{t.s}}</span><span>{{t.a}}</span><span>{{t.r}}</span><span>{{t.n}}</span></div>
+        </sc-for>
+      </div>
+
+      <div class="hint {{emptyCls}}">아직 이동 전. 재생하면 π₁ 이 고른 행동으로 한 걸음씩 움직입니다.</div>
+
+      <div class="res">
+        <div class="stack">
+          <i style="width: {{ret.pct}}%; background: #B45309;"></i>
+        </div>
+        <div class="resrow">
+          <div class="big" style="animation: .34s cubic-bezier(.34,1.5,.6,1) both {{ret.anim}};">{{ret.discounted}}</div>
+          <span class="from">할인 누적 return · γ 0.9</span>
+          <span class="delta" style="color: #B45309; background: #FFF3E0;">즉시 합 {{ret.plain}}</span>
+        </div>
+      </div>
+
+      <div class="tiny">이 경로의 return 은 <b>π₁ 로 움직인 결과</b>이고, 지도의 V₂ 는 <b>π₀ 를 평가한 값</b>입니다. 서로 다른 대상이라 같아질 이유가 없습니다.</div>
+    </aside>
+  </div>
+
+  <div class="foot">
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <button class="btn {{dis.prev}}" onClick="{{goPrev}}">이전</button>
+      <button class="btn primary" onClick="{{goPlay}}">{{playLabel}}</button>
+      <button class="btn {{dis.next}}" onClick="{{goNext}}">다음 이동</button>
+      <button class="btn" onClick="{{goReset}}">처음부터</button>
+    </div>
+    <div class="status">
+      <span class="live {{liveCls}}"></span>
+      <span>재생 중 V · π 는 바뀌지 않습니다</span>
+    </div>
+  </div>
+</div>

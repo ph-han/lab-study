@@ -1,0 +1,134 @@
+<div class="page" style="width: 1440px; min-height: 940px;">
+
+  <div class="top">
+    <div class="brand">Bellman DP Lab <span>가치 반복 · 같은 재료, 다른 집계</span></div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span class="chip mock">기획서 8.2절 fixture</span>
+      <div class="tabs"><div class="on">함께 배우기</div><div>내 구현</div></div>
+    </div>
+  </div>
+
+  <div class="dots">
+    <sc-for list="{{dots}}" as="d" hint-placeholder-count="7">
+      <span class="dt {{d.cls}}"></span>
+    </sc-for>
+    <span class="dtl">가치 반복</span>
+  </div>
+
+  <div>
+    <h1 class="ask">평균 대신 가장 큰 값을 쓰면?</h1>
+    <div class="sub">{{sub}}</div>
+  </div>
+
+  <div class="cols">
+
+    <section class="card" style="flex: 0 0 800px; padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+      <div class="chead">
+        <div class="ctitle">한 바퀴 · 두 지도 모두 V₁ 을 읽습니다</div>
+        <div class="seg">
+          <button class="{{seg.pi}}" onClick="{{setPi}}">평균</button>
+          <button class="{{seg.max}}" onClick="{{setMax}}">최댓값</button>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 14px; justify-content: center;">
+        <div class="pane {{paneA}}">
+          <div class="paneh">
+            <div class="t">확률로 평균</div>
+            <div class="s">정책 평가</div>
+          </div>
+          <div class="grid" style="width: 332px; height: 218px;">
+            <sc-for list="{{cellsA}}" as="c" hint-placeholder-count="6">
+              <div class="mcell {{c.cls}}" style="left: {{c.left}}px; top: {{c.top}}px; width: 104px; height: 104px; background: {{c.bg}};" onClick="{{c.pick}}">
+                <div class="mv">{{c.value}}</div>
+                <div class="mc">{{c.co}}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div class="pane {{paneB}}">
+          <div class="paneh">
+            <div class="t">최댓값</div>
+            <div class="s">가치 반복 · greedy 후보</div>
+          </div>
+          <div class="grid" style="width: 332px; height: 218px;">
+            <sc-for list="{{cellsB}}" as="c" hint-placeholder-count="6">
+              <div class="mcell {{c.cls}}" style="left: {{c.left}}px; top: {{c.top}}px; width: 104px; height: 104px; background: {{c.bg}};" onClick="{{c.pick}}">
+                <div class="mv">{{c.value}}</div>
+                <div class="mc">{{c.co}}</div>
+                <div class="mg {{c.gCls}}">{{c.greedy}}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div class="strip" style="justify-content: space-between;">
+        <div class="strip">
+          <span class="ctitle">{{sel.label}}</span>
+          <span class="nv done"><span class="s">평균</span><span class="v">{{sel.pi}}</span></span>
+          <span class="nv done"><span class="s">최댓값</span><span class="v">{{sel.max}}</span></span>
+        </div>
+        <div class="strip">
+          <span class="lg"><span class="ramp"></span>0–1 공통</span>
+          <span class="lg" style="color: #7C3AED;">보라 = greedy 후보</span>
+        </div>
+      </div>
+
+      <div class="tiny">가치 반복 중의 화살표는 <b>지금 V 에 대한 greedy 후보</b>일 뿐, 평가를 마친 최적 정책이 아닙니다.</div>
+    </section>
+
+    <aside class="card panel" style="flex: 1 1 540px;">
+      <div class="selrow">
+        <div class="s">s = {{sel.label}}</div>
+        <div class="t">읽는 값 V₁ = {{sel.prev}}</div>
+      </div>
+
+      <div class="rows">
+        <sc-for list="{{rows}}" as="r" hint-placeholder-count="4">
+          <div class="row {{r.cls}}">
+            <div class="r1">
+              <div class="aico">{{r.g}}</div>
+              <div class="nxt">{{r.next}}</div>
+              <span class="rb {{r.rcls}}">{{r.r}}</span>
+              <span class="bnum">{{r.b}}</span>
+            </div>
+            <div class="track">
+              <i class="b" style="width: {{r.wB}}%;"></i>
+              <i class="w" style="width: {{r.wW}}%;"></i>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div class="res {{resCls}}">
+        <div class="stack">
+          <sc-for list="{{stack}}" as="s" hint-placeholder-count="4">
+            <i style="width: {{s.w}}%; background: {{s.c}};"></i>
+          </sc-for>
+        </div>
+        <div class="resrow">
+          <div class="big" style="animation: .34s cubic-bezier(.34,1.5,.6,1) both {{res.anim}};">{{res.value}}</div>
+          <span class="from">{{res.label}}</span>
+          <span class="delta">{{res.delta}}</span>
+        </div>
+      </div>
+
+      <div class="tiny">{{res.say}}</div>
+    </aside>
+  </div>
+
+  <div class="foot">
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <button class="btn primary" onClick="{{goPlay}}">{{playLabel}}</button>
+      <button class="btn" onClick="{{toggleMode}}">집계 바꾸기</button>
+      <button class="btn" onClick="{{goReset}}">처음부터</button>
+    </div>
+    <div class="status">
+      <span class="live {{liveCls}}"></span>
+      <span>집계 <span class="m">{{modeName}}</span></span><span class="pip"></span>
+      <span>같은 표 <span class="m">B₁(s,a)</span></span>
+    </div>
+  </div>
+</div>
